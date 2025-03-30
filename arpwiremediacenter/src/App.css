@@ -1,0 +1,104 @@
+/* Main app styling */
+.app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #333;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+/* Container for the player */
+.player-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  max-width: 300px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Styling for the file name */
+.file-name {
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Video styling with locked size */
+.video {
+  width: 250px;
+  height: 140px;
+  object-fit: cover;
+  /* Ensures the video fits within the box */
+  margin-bottom: 15px;
+}
+
+/* Audio element styling */
+.audio {
+  width: 250px;
+  margin-bottom: 15px;
+}
+
+/* Controls container */
+.controls {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Inner control buttons */
+.controls-inner {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* Individual button styling */
+button {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #555;
+}
+
+/* Skip button styling */
+.skip {
+  font-size: 22px;
+}
+
+/* Play/pause button */
+.play-pause {
+  font-size: 24px;
+}
+
+/* Progress bar container */
+.progress-bar {
+  width: 100%;
+  height: 5px;
+  background-color: #555;
+  border-radius: 5px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+/* Progress fill */
+.progress {
+  height: 100%;
+  background-color: #4caf50;
+  transition: width 0.1s ease;
+}
