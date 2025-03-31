@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
+const { ipcRenderer } = window.require("electron");
 
 function App() {
   const [files, setFiles] = useState([]);
@@ -127,6 +128,11 @@ function App() {
 
   return (
     <div className="app">
+      <div className="title-bar">
+        <div className="drag-region"></div>
+        <button className="window-btn" onClick={() => ipcRenderer.send("minimize-window")}>—</button>
+        <button className="window-btn close" onClick={() => ipcRenderer.send("close-window")}>✕</button>
+      </div>
       <div className="player-container">
         <p className="file-name">Now playing: {currentFile.name}</p>
         {currentFile.type.startsWith("video") ? (

@@ -128,3 +128,40 @@ button:hover {
   width: 200px;
   margin-top: 5px;
 }
+
+.title-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  -webkit-app-region: drag;
+  /* Makes it draggable */
+  padding: 0 10px;
+}
+
+.drag-region {
+  flex-grow: 1;
+  -webkit-app-region: drag;
+  /* Ensures only this part is draggable */
+}
+
+.window-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 5px 10px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  /* Allows clicking */
+}
+
+.window-btn.close {
+  color: red;
+}
+
+.window-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
