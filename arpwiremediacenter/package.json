@@ -32,7 +32,8 @@
   },
   "devDependencies": {
     "concurrently": "^6.5.1",
-    "electron": "latest"
+    "electron": "latest",
+    "electron-reloader": "^1.2.3"
   },
   "browserslist": {
     "production": [

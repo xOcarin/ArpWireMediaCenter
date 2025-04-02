@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
-const { ipcRenderer } = window.require("electron");
-
+//const { ipcRenderer } = window.require("electron");
+//onClick={() => ipcRenderer.send("minimize-window")
+//onClick={() => ipcRenderer.send("close-window")
 function App() {
   const [files, setFiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -127,52 +128,82 @@ function App() {
   const currentFile = files[currentIndex];
 
   return (
-    <div className="app">
-      <div className="title-bar">
-        <div className="drag-region"></div>
-        <button className="window-btn" onClick={() => ipcRenderer.send("minimize-window")}>—</button>
-        <button className="window-btn close" onClick={() => ipcRenderer.send("close-window")}>✕</button>
-      </div>
-      <div className="player-container">
-        <p className="file-name">Now playing: {currentFile.name}</p>
-        {currentFile.type.startsWith("video") ? (
-          <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
-        ) : (
-          <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
-        )}
-        <div className="controls">
-          <div className="controls-inner">
-            <button className="skip" onClick={prevTrack}>⏮</button>
-            <button className="play-pause" onClick={togglePlayPause}>
-              {isPlaying ? "❚❚" : "▶"}
-            </button>
-            <button className="skip" onClick={nextTrack}>⏭</button>
-          </div>
-          <div
-            className="progress-bar"
-            ref={progressRef}
-            onMouseDown={handleProgressMouseDown}
-          >
-            <div className="progress" style={{ width: `${progress}%` }}></div>
-          </div>
+      <div className="app">
+        <div className="title-bar">
+          <div className="drag-region"></div>
+          <button className="window-btn">—</button>
+          <button className="window-btn close">✕</button>
+        </div>
+        <div className="player-container">
+          <img id={'background'} src="/media player components/background.png" alt="Next" style={{ position: 'absolute' }} />
+          <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
+          <button className={"navbuttons"} id="number1" style={{ position: 'absolute', padding: 0, width: '50px', height: '50px', border: 'none' }}>
+            <img src="/media player components/1.png" alt="Button Image" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          </button>
 
-          {/* Custom Volume Control */}
-          <div className="volume-control">
-            <label htmlFor="volume-slider">Volume:</label>
-            <input
-              type="range"
-              id="volume-slider"
-              min="0"
-              max="1"
-              step="0.01"
-              value={volume}
-              onChange={handleVolumeChange}
-            />
+
+
+          <button className={"navbuttons"} id="number2" style={{ position: 'absolute'}}>
+          2
+          </button>
+          <button className={"navbuttons"} id="number3" style={{ position: 'absolute'}}>
+          3
+          </button>
+          <button className={"navbuttons"} id="number4" style={{ position: 'absolute'}}>
+          4
+          </button>
+          <button className={"navbuttons"} id="number5" style={{ position: 'absolute'}}>
+          5
+          </button>
+          <button className={"navbuttons"} id="number6" style={{ position: 'absolute'}}>
+          6
+          </button>
+          <p className="file-name">{currentFile.name}</p>
+          {currentFile.type.startsWith("video") ? (
+              <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
+          ) : (
+              <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
+          )}
+          <div className="controls">
+            <div className="controls-inner">
+              <button className="skip" onClick={prevTrack}>
+                <img src="/media player components/skipl.png" alt="Previous" style={{ position: 'absolute', top: '10px', left: '10px' }} />
+              </button>
+              <button className="play-pause" onClick={togglePlayPause}>
+                {isPlaying ? "❚❚" : "▶"}
+              </button>
+              <button className="skip" onClick={nextTrack}>
+                <img src="/media player components/skipr.png" alt="Next" style={{ position: 'absolute', top: '10px', right: '10px' }} />
+              </button>
+            </div>
+            <div
+                className="progress-bar"
+                ref={progressRef}
+                onMouseDown={handleProgressMouseDown}
+            >
+              <div className="progress" style={{ width: `${progress}%` }}></div>
+            </div>
+
+            {/* Custom Volume Control */}
+            <div className="volume-control">
+              <label htmlFor="volume-slider">Volumer:</label>
+              <input
+                  type="range"
+                  id="volume-slider"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={volume}
+                  onChange={handleVolumeChange}
+              />
+              <button>WAWEAW</button>
+            </div>
+
           </div>
         </div>
       </div>
-    </div>
   );
+
 }
 
 export default App;
