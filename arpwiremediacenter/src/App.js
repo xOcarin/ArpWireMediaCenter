@@ -141,26 +141,8 @@ function App() {
             1
           </button>
 
-          <img src="/media player components/1.png" alt="Button Image" style={{ position: 'absolute', width: '10%', height: '10%', objectFit: 'cover', display: 'block', bottom: '30px'}} />
+          <img id="button1" className="navbuttons" src="/media player components/test.png" alt="Button Image" style={{ position: 'absolute'}} />
           
-
-
-
-          <button className={"navbuttons"} id="number2" style={{ position: 'absolute'}}>
-          2
-          </button>
-          <button className={"navbuttons"} id="number3" style={{ position: 'absolute'}}>
-          3
-          </button>
-          <button className={"navbuttons"} id="number4" style={{ position: 'absolute'}}>
-          4
-          </button>
-          <button className={"navbuttons"} id="number5" style={{ position: 'absolute'}}>
-          5
-          </button>
-          <button className={"navbuttons"} id="number6" style={{ position: 'absolute'}}>
-          6
-          </button>
           <p className="file-name">{currentFile.name}</p>
           {currentFile.type.startsWith("video") ? (
               <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />

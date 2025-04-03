@@ -18,6 +18,7 @@ function createWindow() {
             nodeIntegration: true,
             contextIsolation: true,
         },
+        roundedCorners: true,
     });
 
     const isDev = !app.isPackaged;
