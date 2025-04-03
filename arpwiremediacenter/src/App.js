@@ -137,9 +137,12 @@ function App() {
         <div className="player-container">
           <img id={'background'} src="/media player components/background.png" alt="Next" style={{ position: 'absolute' }} />
           <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
-          <button className={"navbuttons"} id="number1" style={{ position: 'absolute', padding: 0, width: '50px', height: '50px', border: 'none' }}>
-            <img src="/media player components/1.png" alt="Button Image" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <button className={"navbuttons"} id="number1" style={{ position: 'absolute' }}>
+            1
           </button>
+
+          <img src="/media player components/1.png" alt="Button Image" style={{ position: 'absolute', width: '10%', height: '10%', objectFit: 'cover', display: 'block', bottom: '30px'}} />
+          
 
 
 
