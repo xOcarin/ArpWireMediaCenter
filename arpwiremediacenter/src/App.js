@@ -137,12 +137,21 @@ function App() {
         <div className="player-container">
           <img id={'background'} src="/media player components/background.png" alt="Next" style={{ position: 'absolute' }} />
           <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
-          <button className={"navbuttons"} id="number1" style={{ position: 'absolute' }}>
-            1
-          </button>
+    
 
           <img id="button1" className="navbuttons" src="/media player components/1-2.png" alt="Button Image" />
           <img id="button2" className="navbuttons" src="/media player components/2-2.png" alt="Button Image" />
+          <img id="button3" className="navbuttons" src="/media player components/3-2.png" alt="Button Image" />
+          <img id="button4" className="navbuttons" src="/media player components/4-2.png" alt="Button Image" />
+          <img id="button5" className="navbuttons" src="/media player components/5-2.png" alt="Button Image" />
+          <img id="button6" className="navbuttons" src="/media player components/6-2.png" alt="Button Image" />
+
+          <img id="aud" className="navbuttons" src="/media player components/aud-2.png" alt="Button Image" />
+          <img id="dsc" className="navbuttons" src="/media player components/dsc-2.png" alt="Button Image" />
+
+          <img id="clock" className="navbuttons" src="/media player components/clock-2.png" alt="Button Image" />
+          <img id="ba" className="navbuttons" src="/media player components/ba-2.png" alt="Button Image" />
+          <img id="rel" className="navbuttons" src="/media player components/rel-2.png" alt="Button Image" />
           <p className="file-name">{currentFile.name}</p>
           {currentFile.type.startsWith("video") ? (
               <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
@@ -152,13 +161,13 @@ function App() {
           <div className="controls">
             <div className="controls-inner">
               <button className="skip" onClick={prevTrack}>
-                <img src="/media player components/skipl.png" alt="Previous" style={{ position: 'absolute', top: '10px', left: '10px' }} />
+                <img src="/media player components/back-2.png" alt="Previous" style={{ position: 'absolute', top: '10px', left: '10px' }} />
               </button>
               <button className="play-pause" onClick={togglePlayPause}>
                 {isPlaying ? "❚❚" : "▶"}
               </button>
               <button className="skip" onClick={nextTrack}>
-                <img src="/media player components/skipr.png" alt="Next" style={{ position: 'absolute', top: '10px', right: '10px' }} />
+                <img src="/media player components/back-2.png" alt="Next" style={{ position: 'absolute', top: '10px', right: '10px' }} />
               </button>
             </div>
             <div
