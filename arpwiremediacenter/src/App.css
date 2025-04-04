@@ -200,6 +200,7 @@
 
 .navbuttons{
   scale: .4;
+  z-index: 5;
 }
 
 .navbuttons:hover{
@@ -243,8 +244,10 @@
 
 #button1{
   position: fixed;
-  bottom: -160px;
+  background: solid black;
+  bottom: -40px;
   left: 200px;
+
 }
 
 

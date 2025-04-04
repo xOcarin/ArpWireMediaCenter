@@ -141,8 +141,8 @@ function App() {
             1
           </button>
 
-          <img id="button1" className="navbuttons" src="/media player components/test.png" alt="Button Image" style={{ position: 'absolute'}} />
-          
+          <img id="button1" className="navbuttons" src="/media player components/1.png" alt="Button Image" />
+          <img id="button1" className="navbuttons" src="/media player components/test.png" alt="Button Image" />
           <p className="file-name">{currentFile.name}</p>
           {currentFile.type.startsWith("video") ? (
               <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
