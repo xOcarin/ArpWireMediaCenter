@@ -11,6 +11,9 @@ function App() {
   const [volume, setVolume] = useState(1); // Volume state (range 0-1)
   const mediaRef = useRef(null);
   const progressRef = useRef(null); // Reference to the progress bar
+  const [pressedButton, setPressedButton] = useState(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const fileNameRef = useRef(null);
 
   useEffect(() => {
     const importMediaFiles = async () => {
@@ -123,6 +126,26 @@ function App() {
     }
   }, [currentIndex]);
 
+  const handleButtonClick = (buttonId) => {
+    setPressedButton(buttonId);
+  };
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (fileNameRef.current) {
+        const isOverflowing = fileNameRef.current.scrollWidth > fileNameRef.current.clientWidth;
+        setShouldScroll(isOverflowing);
+      }
+    };
+
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    
+    return () => {
+      window.removeEventListener('resize', checkOverflow);
+    };
+  }, [files, currentIndex]); // Changed dependency to files and currentIndex
+
   if (files.length === 0) return <div className="app">Loading media files...</div>;
 
   const currentFile = files[currentIndex];
@@ -139,29 +162,109 @@ function App() {
           <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
     
 
-          <img id="button1" className="navbuttons" src="/media player components/1-2.png" alt="Button Image" />
-          <img id="button2" className="navbuttons" src="/media player components/2-2.png" alt="Button Image" />
-          <img id="button3" className="navbuttons" src="/media player components/3-2.png" alt="Button Image" />
-          <img id="button4" className="navbuttons" src="/media player components/4-2.png" alt="Button Image" />
-          <img id="button5" className="navbuttons" src="/media player components/5-2.png" alt="Button Image" />
-          <img id="button6" className="navbuttons" src="/media player components/6-2.png" alt="Button Image" />
+          <img 
+            id="button1" 
+            className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} 
+            src="/media player components/1-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button1')}
+          />
+          <img 
+            id="button2" 
+            className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} 
+            src="/media player components/2-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button2')}
+          />
+          <img 
+            id="button3" 
+            className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} 
+            src="/media player components/3-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button3')}
+          />
+          <img 
+            id="button4" 
+            className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} 
+            src="/media player components/4-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button4')}
+          />
+          <img 
+            id="button5" 
+            className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} 
+            src="/media player components/5-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button5')}
+          />
+          <img 
+            id="button6" 
+            className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} 
+            src="/media player components/6-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('button6')}
+          />
 
-          <img id="aud" className="navbuttons" src="/media player components/aud-2.png" alt="Button Image" />
-          <img id="dsc" className="navbuttons" src="/media player components/dsc-2.png" alt="Button Image" />
+          <img 
+            id="aud" 
+            className="navbuttons"
+            src="/media player components/aud-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('aud')}
+          />
+          <img 
+            id="dsc" 
+            className="navbuttons"
+            src="/media player components/dsc-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('dsc')}
+          />
 
-          <img id="clock" className="navbuttons" src="/media player components/clock-2.png" alt="Button Image" />
-          <img id="ba" className="navbuttons" src="/media player components/ba-2.png" alt="Button Image" />
-          <img id="rel" className="navbuttons" src="/media player components/rel-2.png" alt="Button Image" />
+          <img 
+            id="clock" 
+            className="navbuttons"
+            src="/media player components/clock-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('clock')}
+          />
+          <img 
+            id="ba" 
+            className="navbuttons"
+            src="/media player components/ba-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('ba')}
+          />
+          <img 
+            id="rel" 
+            className="navbuttons"
+            src="/media player components/rel-2.png" 
+            alt="Button Image" 
+            onClick={() => handleButtonClick('rel')}
+          />
 
-          <img id="on" className="roundButtons" src="/media player components/on.png" alt="Button Image" />
+        <img 
+          id="on" 
+          className="roundButtons" 
+          onClick={togglePlayPause} 
+          src={isPlaying ? "/media player components/on.png" : "/media player components/play.png"} 
+          alt={isPlaying ? "Play Button" : "Pause Button"} 
+        />
 
-          <img id="skipL" className="skipButtons" onClick={prevTrack} src="/media player components/skipL.png" alt="Button Image" />
-          <img id="skipR" className="skipButtons" onClick={nextTrack} src="/media player components/skipR.png" alt="Button Image" />
-          <img id="topS" className="skipButtons" src="/media player components/topS.png" alt="Button Image" />
-          <img id="bottomS" className="skipButtons" src="/media player components/bottomS.png" alt="Button Image" />
+          <img id="skipL" className="skipButtons" onClick={prevTrack} src="/media player components/skipL.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+          <div className="skipButton-mask skipL-mask" onClick={prevTrack}></div>
+          
+          <img id="skipR" className="skipButtons" onClick={nextTrack} src="/media player components/skipR.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+          <div className="skipButton-mask skipR-mask" onClick={nextTrack}></div>
+          
+          <img id="topS" className="skipButtons" src="/media player components/topS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+          <div className="skipButton-mask topS-mask"></div>
+          
+          <img id="bottomS" className="skipButtons" src="/media player components/bottomS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+          <div className="skipButton-mask bottomS-mask"></div>
 
-
-          <p className="file-name">{currentFile.name}</p>
+          <p className={`file-name ${shouldScroll ? 'scroll' : ''}`} ref={fileNameRef}>
+            <span>{currentFile.name}</span>
+          </p>
           {currentFile.type.startsWith("video") ? (
               <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
           ) : (
