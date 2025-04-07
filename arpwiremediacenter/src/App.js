@@ -127,7 +127,7 @@ function App() {
   }, [currentIndex]);
 
   const handleButtonClick = (buttonId) => {
-    setPressedButton(buttonId);
+    setPressedButton((prevButton) => (prevButton === buttonId ? null : buttonId));
   };
 
   useEffect(() => {
