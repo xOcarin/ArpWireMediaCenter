@@ -3,6 +3,8 @@ import "./App.css";
 //const { ipcRenderer } = window.require("electron");
 //onClick={() => ipcRenderer.send("minimize-window")
 //onClick={() => ipcRenderer.send("close-window")
+import AudioVisualizer from './AudioVisualizer'; 
+
 function App() {
   const [files, setFiles] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -14,6 +16,8 @@ function App() {
   const [pressedButton, setPressedButton] = useState(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const fileNameRef = useRef(null);
+  const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
+  const [showVisualizer, setShowVisualizer] = useState(false); // New state for visualizer
 
   useEffect(() => {
     const importMediaFiles = async () => {
@@ -128,6 +132,9 @@ function App() {
 
   const handleButtonClick = (buttonId) => {
     setPressedButton((prevButton) => (prevButton === buttonId ? null : buttonId));
+    if (buttonId === 'aud') {
+      setShowVisualizer((prev) => !prev); // Toggle visualizer
+    }
   };
 
   useEffect(() => {
@@ -145,6 +152,16 @@ function App() {
       window.removeEventListener('resize', checkOverflow);
     };
   }, [files, currentIndex]); // Changed dependency to files and currentIndex
+
+  const handleClockClick = () => {
+    const currentTime = new Date().toLocaleTimeString(); // Get current system time
+    setTempFileName(currentTime); // Set temporary file name to current time
+    setShouldScroll(false); // Disable scrolling
+    setTimeout(() => {
+      setTempFileName(null); // Revert back to original file name after 3 seconds
+      setShouldScroll(true); // Re-enable scrolling after reverting
+    }, 3000);
+  };
 
   if (files.length === 0) return <div className="app">Loading media files...</div>;
 
@@ -222,10 +239,10 @@ function App() {
 
           <img 
             id="clock" 
-            className="navbuttons"
+            className="navbuttons" 
             src="/media player components/clock-2.png" 
             alt="Button Image" 
-            onClick={() => handleButtonClick('clock')}
+            onClick={handleClockClick}
           />
           <img 
             id="ba" 
@@ -263,8 +280,11 @@ function App() {
           <div className="skipButton-mask bottomS-mask"></div>
 
           <p className={`file-name ${shouldScroll ? 'scroll' : ''}`} ref={fileNameRef}>
-            <span>{currentFile.name}</span>
+            <span>{tempFileName || currentFile.name}</span>
           </p>
+          {tempFileName && (
+            <p className="time-display">{tempFileName}</p>
+          )}
           {currentFile.type.startsWith("video") ? (
               <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
           ) : (
@@ -301,6 +321,7 @@ function App() {
 
           </div>
         </div>
+        {showVisualizer && <AudioVisualizer mediaRef={mediaRef} />} {/* Render visualizer conditionally */}
       </div>
   );
 
