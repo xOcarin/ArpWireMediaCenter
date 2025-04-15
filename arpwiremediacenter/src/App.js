@@ -4,6 +4,8 @@ import "./App.css";
 //onClick={() => ipcRenderer.send("minimize-window")
 //onClick={() => ipcRenderer.send("close-window")
 import AudioVisualizer from './AudioVisualizer'; 
+import { Howl } from 'howler'; // Import Howler
+
 
 function App() {
   const [files, setFiles] = useState([]);
@@ -18,11 +20,12 @@ function App() {
   const fileNameRef = useRef(null);
   const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
   const [showVisualizer, setShowVisualizer] = useState(false); // New state for visualizer
+  const [sound, setSound] = useState(null); // New state for Howler sound
 
   useEffect(() => {
     const importMediaFiles = async () => {
       const context = require.context("./media", false, /\.(mp3|wav|mp4)$/);
-      const mediaFiles = context.keys().map((file, index) => ({
+      const mediaFiles = context.keys().map((file) => ({
         name: file.replace("./", ""),
         src: context(file),
         type: file.endsWith(".mp4") ? "video/mp4" : "audio/mpeg",
@@ -32,12 +35,15 @@ function App() {
     importMediaFiles();
   }, []);
 
+  // Define currentFile after files are set
+  const currentFile = files[currentIndex]; // Ensure this is defined after files are populated
+
   const togglePlayPause = () => {
-    if (mediaRef.current) {
+    if (sound) {
       if (isPlaying) {
-        mediaRef.current.pause();
+        sound.pause();
       } else {
-        mediaRef.current.play();
+        sound.play();
       }
       setIsPlaying(!isPlaying);
     }
@@ -51,10 +57,24 @@ function App() {
   };
 
   const nextTrack = () => {
+    if (sound) {
+        sound.stop(); // Stop the current track
+    }
     setCurrentIndex((prevIndex) => (prevIndex + 1) % files.length);
     setIsPlaying(false);
     setProgress(0);
-  };
+    
+    // Play the next track directly
+    const newSound = new Howl({
+        src: [files[(currentIndex + 1) % files.length].src],
+        volume: volume,
+        onplay: () => setIsPlaying(true),
+        onpause: () => setIsPlaying(false),
+        onend: nextTrack, // Automatically go to the next track when the current one ends
+    });
+    setSound(newSound);
+    newSound.play(); // Start playing the next track
+}; 
 
   const prevTrack = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + files.length) % files.length);
@@ -115,11 +135,23 @@ function App() {
 
   // Auto play the new track when it changes
   useEffect(() => {
-    if (mediaRef.current) {
-      mediaRef.current.play(); // Start playing the new track
-      setIsPlaying(true); // Set isPlaying to true so UI reflects playing state
+    if (currentFile) {
+      const newSound = new Howl({
+        src: [currentFile.src],
+        volume: volume,
+        onplay: () => setIsPlaying(true),
+        onpause: () => setIsPlaying(false),
+        onend: nextTrack, // Automatically go to the next track when the current one ends
+      });
+      setSound(newSound);
     }
-  }, [currentIndex]); // This will run when the track changes
+    // Cleanup function to stop the sound when the component unmounts or track changes
+    return () => {
+      if (sound) {
+        sound.stop();
+      }
+    };
+  }, [currentFile]); // This will run when the track changes
 
   useEffect(() => {
     if (mediaRef.current) {
@@ -164,8 +196,6 @@ function App() {
   };
 
   if (files.length === 0) return <div className="app">Loading media files...</div>;
-
-  const currentFile = files[currentIndex];
 
   return (
       <div className="app">
@@ -285,10 +315,14 @@ function App() {
           {tempFileName && (
             <p className="time-display">{tempFileName}</p>
           )}
-          {currentFile.type.startsWith("video") ? (
-              <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
-          ) : (
-              <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
+          {currentFile && (
+            <>
+              {currentFile.type.startsWith("video") ? (
+                <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
+              ) : (
+                <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
+              )}
+            </>
           )}
           <div className="controls">
             <div className="controls-inner">

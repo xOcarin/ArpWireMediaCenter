@@ -10,6 +10,7 @@
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
     "electron": "^35.1.2",
+    "howler": "^2.2.4",
     "p5": "^1.11.3",
     "p5.sound": "^0.2.0",
     "react": "^19.1.0",
