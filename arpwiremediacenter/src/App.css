@@ -162,7 +162,7 @@
   justify-content: flex-end;
   align-items: center;
   height: 30px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0);
   color: white;
   -webkit-app-region: drag;
   /* Makes it draggable */
