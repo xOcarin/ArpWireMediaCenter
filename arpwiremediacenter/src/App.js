@@ -13,7 +13,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(1); // Volume state (range 0-1)
+  const [volume, setVolume] = useState(0); // Volume state (range 0-1)
   const [pressedButton, setPressedButton] = useState(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
@@ -23,6 +23,20 @@ function App() {
   const progressRef = useRef(null); // Reference to the progress bar
   const fileNameRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null);
+
+
+  const [displayText, setDisplayText] = useState("Default Text");
+  const [isChangingText, setIsChangingText] = useState(false);
+
+ 
+
+  
+  
+
+
+  
+
 
   // Load media files
   useEffect(() => {
@@ -222,25 +236,56 @@ function App() {
         setShouldScroll(isOverflowing);
       }
     };
-
+  
     checkOverflow();
     window.addEventListener('resize', checkOverflow);
-    
+  
     return () => {
       window.removeEventListener('resize', checkOverflow);
     };
-  }, [files, currentIndex]); // Changed dependency to files and currentIndex
+  }, [files, currentIndex, tempFileName]); // Include tempFileName as a dependency
+  
 
   // Handle clock click
   const handleClockClick = () => {
-    const currentTime = new Date().toLocaleTimeString(); // Get current system time
-    setTempFileName(currentTime); // Set temporary file name to current time
+    const currentTime = new Date().toLocaleTimeString();
+    setTempFileName(currentTime); // Temporarily set the file name
     setShouldScroll(false); // Disable scrolling
-    setTimeout(() => {
+  
+    if (tempFileNameTimeout) clearTimeout(tempFileNameTimeout); // Clear any existing timeout
+  
+    const timeout = setTimeout(() => {
       setTempFileName(null); // Revert back to original file name after 3 seconds
       setShouldScroll(true); // Re-enable scrolling after reverting
     }, 3000);
+  
+    setTempFileNameTimeout(timeout); // Store the timeout ID to clear it later
   };
+  
+
+  const temporarilyChangeText = (newText) => {
+    if (tempFileNameTimeout) clearTimeout(tempFileNameTimeout);
+  
+    setTempFileName(newText); // Temporarily set new text
+    setShouldScroll(false); // Disable scrolling while showing new text
+  
+    const timeout = setTimeout(() => {
+      setTempFileName(null); // Revert text after 3 seconds
+      setShouldScroll(true); // Re-enable scrolling
+    }, 3000);
+  
+    setTempFileNameTimeout(timeout); // Store timeout ID for cleanup
+  };
+  
+
+
+
+  
+
+
+
+
+  
 
   if (files.length === 0) return <div className="app">Loading media files...</div>;
 
@@ -256,12 +301,13 @@ function App() {
         <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
         
         {/* Navigation buttons */}
-        <img id="button1" className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} src="/media player components/1-2.png" alt="Button Image" onClick={() => handleButtonClick('button1')} />
-        <img id="button2" className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} src="/media player components/2-2.png" alt="Button Image" onClick={() => handleButtonClick('button2')} />
-        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src="/media player components/3-2.png" alt="Button Image" onClick={() => handleButtonClick('button3')} />
-        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src="/media player components/4-2.png" alt="Button Image" onClick={() => handleButtonClick('button4')} />
-        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src="/media player components/5-2.png" alt="Button Image" onClick={() => handleButtonClick('button5')} />
-        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src="/media player components/6-2.png" alt="Button Image" onClick={() => handleButtonClick('button6')} />
+        <img id="button1" className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} src="/media player components/1-2.png" alt="Button Image" onClick={() => { handleButtonClick('button1'); temporarilyChangeText('Slow Mo!'); }} />
+        <img id="button2" className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} src="/media player components/2-2.png" alt="Button Image" onClick={() => { handleButtonClick('button2'); temporarilyChangeText('Speed Up!'); }} />
+        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src="/media player components/3-2.png" alt="Button Image" onClick={() => { handleButtonClick('button3'); temporarilyChangeText('X'); }} />
+        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src="/media player components/4-2.png" alt="Button Image" onClick={() => { handleButtonClick('button4'); temporarilyChangeText('button4 pressed'); }} />
+        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src="/media player components/5-2.png" alt="Button Image" onClick={() => { handleButtonClick('button5'); temporarilyChangeText('button5 pressed'); }} />
+        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src="/media player components/6-2.png" alt="Button Image" onClick={() => { handleButtonClick('button6'); temporarilyChangeText('button6 pressed'); }} />
+
         
         <img id="aud" className="navbuttons" src="/media player components/aud-2.png" alt="Button Image" onClick={() => handleButtonClick('aud')} />
         <img id="dsc" className="navbuttons" src="/media player components/dsc-2.png" alt="Button Image" onClick={() => handleButtonClick('dsc')} />
@@ -278,17 +324,31 @@ function App() {
         <div className="skipButton-mask skipR-mask" onClick={nextTrack}></div>
         
         <img id="topS" className="skipButtons" src="/media player components/topS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask topS-mask"></div>
+        <div className="skipButton-mask topS-mask" onClick={() => {
+          const newVolume = Math.min(volume + 0.1, 1);
+          setVolume(newVolume);
+          if (sound) sound.volume(newVolume);
+        }}></div>
         
         <img id="bottomS" className="skipButtons" src="/media player components/bottomS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask bottomS-mask"></div>
+        <div className="skipButton-mask bottomS-mask" onClick={() => {
+          const newVolume = Math.max(volume - 0.1, 0);
+          setVolume(newVolume);
+          if (sound) sound.volume(newVolume);
+        }}></div>
 
-        <p className={`file-name ${shouldScroll ? 'scroll' : ''}`} ref={fileNameRef}>
-          <span>{tempFileName || currentFile.name}</span>
-        </p>
-        {tempFileName && (
-          <p className="time-display">{tempFileName}</p>
-        )}
+{/* Apply the hidden class when tempFileName is set */}
+<p className={`file-name ${shouldScroll && !tempFileName ? 'scroll' : 'hidden'}`} ref={fileNameRef}>
+  <span id="filenameText">{tempFileName || currentFile.name}</span>
+</p>
+
+{/* Show time-display only when tempFileName is present */}
+{tempFileName && (
+  <p className="time-display">{tempFileName}</p>
+)}
+
+
+
         {currentFile && (
           <>
             {currentFile.type.startsWith("video") ? (
