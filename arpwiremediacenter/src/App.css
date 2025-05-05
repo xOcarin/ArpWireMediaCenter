@@ -94,10 +94,12 @@
 
 /* Video styling with locked size */
 .video {
-  width: 250px;
-  height: 140px;
-  object-fit: cover;
-  margin-bottom: 15px;
+  position: absolute;
+  top: 22vh;
+  left: 25vw;
+  width: 50%;
+  height: 50%;
+  z-index: 10; /* Adjust z-index if necessary */
 }
 
 /* Audio element styling */
@@ -422,3 +424,19 @@
   clip-path: circle(50% at 50% 50%);
 }
 
+
+
+.modal-content {
+  position: relative;
+  width: 80%;
+  max-width: 800px;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+}

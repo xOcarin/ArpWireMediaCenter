@@ -19,11 +19,14 @@ function App() {
   const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
   const [showVisualizer, setShowVisualizer] = useState(false); // New state for visualizer
   const [sound, setSound] = useState(null); // New state for Howler sound
+  const [playbackRate, setPlaybackRate] = useState(1); // New state for playback rate
   const mediaRef = useRef(null);
   const progressRef = useRef(null); // Reference to the progress bar
   const fileNameRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false); // New state for video modal visibility
+  const videoRef = useRef(null); // Reference for the video element
 
 
   const [displayText, setDisplayText] = useState("Default Text");
@@ -31,7 +34,6 @@ function App() {
 
  
 
-  
   
 
 
@@ -57,11 +59,17 @@ function App() {
 
   // Toggle play/pause
   const togglePlayPause = () => {
-    if (sound) {
+    if (currentFile && sound) {
       if (isPlaying) {
         sound.pause(); // Pause the current track
+        if (videoRef.current) {
+          videoRef.current.pause(); // Pause the video as well
+        }
       } else {
         sound.play(); // Play the current track
+        if (videoRef.current) {
+          videoRef.current.play(); // Play the video as well
+        }
       }
       setIsPlaying(!isPlaying); // Toggle the playing state
     }
@@ -88,6 +96,7 @@ function App() {
     const newSound = new Howl({
       src: [files[(currentIndex + 1) % files.length].src],
       volume: volume,
+      rate: playbackRate,
       onplay: () => setIsPlaying(true),
       onpause: () => setIsPlaying(false),
       onend: nextTrack, // Automatically go to the next track when the current one ends
@@ -173,11 +182,25 @@ function App() {
         sound.stop();
       }
       
+      // Use Howler for audio playback for all types
       const newSound = new Howl({
         src: [currentFile.src],
         volume: volume,
-        onplay: () => setIsPlaying(true),
-        onpause: () => setIsPlaying(false),
+        rate: playbackRate,
+        onplay: () => {
+          setIsPlaying(true);
+          if (currentFile.type.startsWith("video")) {
+            if (videoRef.current) {
+              videoRef.current.play(); // Play the video when the audio starts
+            }
+          }
+        },
+        onpause: () => {
+          setIsPlaying(false);
+          if (videoRef.current) {
+            videoRef.current.pause(); // Pause the video when the audio is paused
+          }
+        },
         onend: nextTrack, // Automatically go to the next track when the current one ends
       });
       setSound(newSound);
@@ -189,7 +212,42 @@ function App() {
         sound.stop();
       }
     };
-  }, [currentFile]); // This will run when the track changes
+  }, [currentFile]); // This will run when tshe track changes
+
+  // Event listeners for video playback
+  useEffect(() => {
+    const videoElement = mediaRef.current;
+
+    if (videoElement) {
+      const updateProgress = () => {
+        const progressValue = (videoElement.currentTime / videoElement.duration) * 100; // Calculate progress
+        setProgress(progressValue); // Update progress state
+      };
+
+      videoElement.addEventListener("play", () => setIsPlaying(true));
+      videoElement.addEventListener("pause", () => setIsPlaying(false));
+      videoElement.addEventListener("timeupdate", updateProgress);
+
+      return () => {
+        videoElement.removeEventListener("play", () => setIsPlaying(true));
+        videoElement.removeEventListener("pause", () => setIsPlaying(false));
+        videoElement.removeEventListener("timeupdate", updateProgress);
+      };
+    }
+  }, [mediaRef]); // Run this effect when mediaRef changes
+
+  // Update progress for Howler audio
+  useEffect(() => {
+    const updateProgress = () => {
+      if (sound) {
+        const progressValue = (sound.seek() / sound.duration()) * 100; // Get current time and duration from Howler
+        setProgress(progressValue); // Update progress state
+      }
+    };
+
+    const interval = setInterval(updateProgress, 1000); // Update progress every second
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, [sound]); // Run this effect when the sound changes
 
   useEffect(() => {
     return () => {
@@ -215,15 +273,23 @@ function App() {
       setShowVisualizer((prev) => !prev); // Toggle visualizer
     }
     if (buttonId === 'button1') {
+      const newRate = playbackRate === 0.8 ? 1 : 0.8; // Toggle between normal and slowed down
+      setPlaybackRate(newRate); // Set the global playback rate for audio
       if (sound) {
-        const newRate = pressedButton === 'button1' ? 1 : 0.8; // Toggle between normal and slowed down
-        sound.rate(newRate); // Set the playback rate
+        sound.rate(newRate); // Set the playback rate for audio
+      }
+      if (videoRef.current) {
+        videoRef.current.playbackRate = newRate; // Set the playback rate for video
       }
     }
     if (buttonId === 'button2') {
+      const newRate = playbackRate === 1.2 ? 1 : 1.2; // Toggle between normal and sped up
+      setPlaybackRate(newRate); // Set the global playback rate for audio
       if (sound) {
-        const newRate = pressedButton === 'button2' ? 1 : 1.2; // Toggle between normal and slowed down
-        sound.rate(newRate); // Set the playback rate
+        sound.rate(newRate); // Set the playback rate for audio
+      }
+      if (videoRef.current) {
+        videoRef.current.playbackRate = newRate; // Set the playback rate for video
       }
     }
   };
@@ -352,7 +418,7 @@ function App() {
         {currentFile && (
           <>
             {currentFile.type.startsWith("video") ? (
-              <video ref={mediaRef} src={currentFile.src} className="video" onClick={togglePlayPause} />
+              <video ref={videoRef} src={currentFile.src} className="video" autoPlay muted />
             ) : (
               <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
             )}
@@ -385,6 +451,16 @@ function App() {
         </div>
       </div>
       {showVisualizer && <AudioVisualizer mediaRef={mediaRef} />} {/* Render visualizer conditionally */}
+
+      {/* Video Modal */}
+      {isVideoModalOpen && (
+        <div className="video-modal">
+          <div className="modal-content">
+            <span className="close" onClick={() => setIsVideoModalOpen(false)}>&times;</span>
+            <video ref={mediaRef} src={currentFile.src} className="video" controls />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
