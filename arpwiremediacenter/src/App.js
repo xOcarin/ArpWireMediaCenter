@@ -182,6 +182,10 @@ function App() {
         sound.stop();
       }
       
+      // Define elements to toggle based on media type
+      const audioOnlyElements = ['aud', 'screen', 'filenameText']; // Add other audio-specific element IDs here
+      const videoOnlyElements = []; // Add video-specific element IDs here if needed later
+
       // Use Howler for audio playback for all types
       const newSound = new Howl({
         src: [currentFile.src],
@@ -205,6 +209,15 @@ function App() {
       });
       setSound(newSound);
       newSound.play(); // Start playing the new track
+      
+      // Toggle element visibility based on file type
+      if (currentFile.type.startsWith("video")) {
+        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, false)); // Hide audio-only elements
+        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, true)); // Show video-only elements
+      } else {
+        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, true)); // Show audio-only elements
+        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, false)); // Hide video-only elements
+      }
     }
     // Cleanup function to stop the sound when the component unmounts or track changes
     return () => {
@@ -216,55 +229,50 @@ function App() {
 
   // Event listeners for video playback
   useEffect(() => {
-    const videoElement = mediaRef.current;
+    // Use videoRef for video element listeners
+    const videoElement = videoRef.current;
 
     if (videoElement) {
       const updateProgress = () => {
-        const progressValue = (videoElement.currentTime / videoElement.duration) * 100; // Calculate progress
-        setProgress(progressValue); // Update progress state
+        // Ensure sound is available and is playing or was playing just before pause
+        if (sound) {
+          const progressValue = (sound.seek() / sound.duration()) * 100; // Get current time and duration from Howler
+          setProgress(progressValue); // Update progress state
+        } else {
+           // Fallback for video if Howler isn't ready, though ideally Howler handles progress
+          const progressValue = (videoElement.currentTime / videoElement.duration) * 100;
+          setProgress(progressValue);
+        }
       };
 
-      videoElement.addEventListener("play", () => setIsPlaying(true));
-      videoElement.addEventListener("pause", () => setIsPlaying(false));
+      videoElement.addEventListener("play", () => {
+        setIsPlaying(true);
+        // Ensure Howler sound plays in sync with video if it exists
+        if (sound && sound.state() === 'paused') {
+           sound.play();
+        }
+      });
+      videoElement.addEventListener("pause", () => {
+        setIsPlaying(false);
+        // Ensure Howler sound pauses in sync with video if it exists
+         if (sound && sound.state() === 'playing') {
+           sound.pause();
+         }
+      });
       videoElement.addEventListener("timeupdate", updateProgress);
+      videoElement.addEventListener("ended", nextTrack); // Add listener for video end
 
       return () => {
-        videoElement.removeEventListener("play", () => setIsPlaying(true));
-        videoElement.removeEventListener("pause", () => setIsPlaying(false));
-        videoElement.removeEventListener("timeupdate", updateProgress);
+        // Check if videoElement exists before removing listeners
+        if (videoElement) {
+          videoElement.removeEventListener("play", () => setIsPlaying(true));
+          videoElement.removeEventListener("pause", () => setIsPlaying(false));
+          videoElement.removeEventListener("timeupdate", updateProgress);
+          videoElement.removeEventListener("ended", nextTrack);
+        }
       };
     }
-  }, [mediaRef]); // Run this effect when mediaRef changes
-
-  // Update progress for Howler audio
-  useEffect(() => {
-    const updateProgress = () => {
-      if (sound) {
-        const progressValue = (sound.seek() / sound.duration()) * 100; // Get current time and duration from Howler
-        setProgress(progressValue); // Update progress state
-      }
-    };
-
-    const interval = setInterval(updateProgress, 1000); // Update progress every second
-    return () => clearInterval(interval); // Cleanup interval on unmount
-  }, [sound]); // Run this effect when the sound changes
-
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.stop(); // Stop the sound when the component unmounts or track changes
-      }
-    };
-  }, [currentIndex]); 
-
-  useEffect(() => {
-    if (mediaRef.current) {
-      mediaRef.current.addEventListener("timeupdate", updateProgress);
-      return () => {
-        mediaRef.current.removeEventListener("timeupdate", updateProgress);
-      };
-    }
-  }, [currentIndex]);
+  }, [videoRef, sound, nextTrack]); // Re-run when videoRef, sound, or nextTrack changes, dependency on sound is important for sync
 
   // Handle button clicks
   const handleButtonClick = (buttonId) => {
@@ -291,6 +299,55 @@ function App() {
       if (videoRef.current) {
         videoRef.current.playbackRate = newRate; // Set the playback rate for video
       }
+    }
+    if (buttonId === 'button3') {
+      // Jump backward by 5 seconds
+      if (sound) {
+        sound.seek(Math.max(0, sound.seek() - 5)); // Seek back for audio
+      } else if (videoRef.current) {
+        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5); // Seek back for video
+      }
+    }
+    if (buttonId === 'button4') {
+      // Jump forward by 5 seconds
+      if (sound) {
+        sound.seek(Math.min(sound.duration(), sound.seek() + 5)); // Seek forward for audio
+      } else if (videoRef.current && videoRef.current.duration) {
+        videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5); // Seek forward for video
+      }
+    }
+    if (buttonId === 'button5') {
+      // Reset playback speed to 1x
+      setPlaybackRate(1); // Set global playback rate state
+      if (sound) {
+        sound.rate(1); // Set playback rate for audio
+      }
+      if (videoRef.current) {
+        videoRef.current.playbackRate = 1; // Set playback rate for video
+      }
+    }
+    if (buttonId === 'button6') {
+      // Set playback speed to 1.5x
+      const newRate = 1.5; // Define the new rate
+      setPlaybackRate(newRate); // Set global playback rate state
+      if (sound) {
+        sound.rate(newRate); // Set playback rate for audio
+      }
+      if (videoRef.current) {
+        videoRef.current.playbackRate = newRate; // Set playback rate for video
+      }
+    }
+    if (buttonId === 'button7') {
+      console.log("Button 7 clicked"); // Placeholder effect
+    }
+    if (buttonId === 'button8') {
+      console.log("Button 8 clicked"); // Placeholder effect
+    }
+    if (buttonId === 'button9') {
+      console.log("Button 9 clicked"); // Placeholder effect
+    }
+    if (buttonId === 'button10') {
+      console.log("Button 10 clicked"); // Placeholder effect
     }
   };
 
@@ -344,14 +401,13 @@ function App() {
   };
   
 
-
-
-  
-
-
-
-
-  
+  // Helper function to toggle element visibility by ID
+  const toggleElementVisibilityById = (id, isVisible) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = isVisible ? '' : 'none'; // Use '' to revert to default display or 'block'
+    }
+  };
 
   if (files.length === 0) return <div className="app">Loading media files...</div>;
 
@@ -369,10 +425,10 @@ function App() {
         {/* Navigation buttons */}
         <img id="button1" className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} src="/media player components/1-2.png" alt="Button Image" onClick={() => { handleButtonClick('button1'); temporarilyChangeText('Slow Mo!'); }} />
         <img id="button2" className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} src="/media player components/2-2.png" alt="Button Image" onClick={() => { handleButtonClick('button2'); temporarilyChangeText('Speed Up!'); }} />
-        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src="/media player components/3-2.png" alt="Button Image" onClick={() => { handleButtonClick('button3'); temporarilyChangeText('X'); }} />
-        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src="/media player components/4-2.png" alt="Button Image" onClick={() => { handleButtonClick('button4'); temporarilyChangeText('button4 pressed'); }} />
-        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src="/media player components/5-2.png" alt="Button Image" onClick={() => { handleButtonClick('button5'); temporarilyChangeText('button5 pressed'); }} />
-        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src="/media player components/6-2.png" alt="Button Image" onClick={() => { handleButtonClick('button6'); temporarilyChangeText('button6 pressed'); }} />
+        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src="/media player components/3-2.png" alt="Button Image" onClick={() => { handleButtonClick('button3'); temporarilyChangeText('Rewind!'); }} />
+        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src="/media player components/4-2.png" alt="Button Image" onClick={() => { handleButtonClick('button4'); temporarilyChangeText('Fast Forward!'); }} />
+        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src="/media player components/5-2.png" alt="Button Image" onClick={() => { handleButtonClick('button5'); temporarilyChangeText('Normal Speed!'); }} />
+        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src="/media player components/6-2.png" alt="Button Image" onClick={() => { handleButtonClick('button6'); temporarilyChangeText('Double Time!'); }} />
 
         
         <img id="aud" className="navbuttons" src="/media player components/aud-2.png" alt="Button Image" onClick={() => handleButtonClick('aud')} />
@@ -435,7 +491,7 @@ function App() {
           </div>
 
           {/* Custom Volume Control */}
-          <div className="volume-control">
+          <div className="volume-control" id="volumeControl">
             <label htmlFor="volume-slider">Volume:</label>
             <input
               type="range"
