@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
-//const { ipcRenderer } = window.require("electron");
-//onClick={() => ipcRenderer.send("minimize-window")
-//onClick={() => ipcRenderer.send("close-window")
 import AudioVisualizer from './AudioVisualizer'; 
 import { Howl } from 'howler'; // Import Howler
-
 
 function App() {
   // State declarations
@@ -20,6 +16,7 @@ function App() {
   const [showVisualizer, setShowVisualizer] = useState(false); // New state for visualizer
   const [sound, setSound] = useState(null); // New state for Howler sound
   const [playbackRate, setPlaybackRate] = useState(1); // New state for playback rate
+  const [mediaSourcePath, setMediaSourcePath] = useState('');
   const mediaRef = useRef(null);
   const progressRef = useRef(null); // Reference to the progress bar
   const fileNameRef = useRef(null);
@@ -40,19 +37,52 @@ function App() {
   
 
 
+  // Function to load media files from a folder
+  const loadMediaFiles = async (folderPath) => {
+    if (!folderPath) return;
+    setMediaSourcePath(folderPath);
+    localStorage.setItem('mediaSourcePath', folderPath);
+
+    // Use IPC to get file list from main process
+    if (window.electronAPI && window.electronAPI.getMediaFiles) {
+      const mediaFiles = await window.electronAPI.getMediaFiles(folderPath);
+      setFiles(mediaFiles);
+      setCurrentIndex(0); // Optionally reset to first file
+    }
+  };
+
+  // Handler for the src (dsc) button
+  const handleSourceButtonClick = async () => {
+    if (!window.electronAPI || !window.electronAPI.selectFolder) {
+      alert("Electron API not available");
+      return;
+    }
+    const folderPath = await window.electronAPI.selectFolder();
+    if (folderPath) {
+      loadMediaFiles(folderPath);
+    }
+  };
+
   // Load media files
   useEffect(() => {
     const importMediaFiles = async () => {
-      const context = require.context("./media", false, /\.(mp3|wav|mp4)$/);
-      const mediaFiles = context.keys().map((file) => ({
-        name: file.replace("./", ""),
-        src: context(file),
-        type: file.endsWith(".mp4") ? "video/mp4" : "audio/mpeg",
-      }));
-      setFiles(mediaFiles);
+      if (mediaSourcePath && window.electronAPI && window.electronAPI.getMediaFiles) {
+        // Use the selected folder
+        const mediaFiles = await window.electronAPI.getMediaFiles(mediaSourcePath);
+        setFiles(mediaFiles);
+      } else {
+        // Fallback to bundled media
+        const context = require.context("./media", false, /\.(mp3|wav|mp4)$/);
+        const mediaFiles = context.keys().map((file) => ({
+          name: file.replace("./", ""),
+          src: context(file),
+          type: file.endsWith(".mp4") ? "video/mp4" : "audio/mpeg",
+        }));
+        setFiles(mediaFiles);
+      }
     };
     importMediaFiles();
-  }, []);
+  }, [mediaSourcePath]);
 
   // Define currentFile after files are set
   const currentFile = files[currentIndex]; // Ensure this is defined after files are populated
@@ -94,7 +124,7 @@ function App() {
     
     // Play the next track directly
     const newSound = new Howl({
-      src: [files[(currentIndex + 1) % files.length].src],
+      src: [files[(currentIndex + 1) % files.length].absPath],
       volume: volume,
       rate: playbackRate,
       onplay: () => setIsPlaying(true),
@@ -188,7 +218,7 @@ function App() {
 
       // Use Howler for audio playback for all types
       const newSound = new Howl({
-        src: [currentFile.src],
+        src: [currentFile.absPath],
         volume: volume,
         rate: playbackRate,
         onplay: () => {
@@ -281,7 +311,7 @@ function App() {
       setShowVisualizer((prev) => !prev); // Toggle visualizer
     }
     if (buttonId === 'button1') {
-      const newRate = playbackRate === 0.8 ? 1 : 0.8; // Toggle between normal and slowed down
+      const newRate = playbackRate === 0.6 ? 1 : 0.6; // Toggle between normal and slowed down
       setPlaybackRate(newRate); // Set the global playback rate for audio
       if (sound) {
         sound.rate(newRate); // Set the playback rate for audio
@@ -291,7 +321,7 @@ function App() {
       }
     }
     if (buttonId === 'button2') {
-      const newRate = playbackRate === 1.2 ? 1 : 1.2; // Toggle between normal and sped up
+      const newRate = playbackRate === 0.8 ? 1 : 0.8; // Toggle between normal and slowed down
       setPlaybackRate(newRate); // Set the global playback rate for audio
       if (sound) {
         sound.rate(newRate); // Set the playback rate for audio
@@ -301,34 +331,18 @@ function App() {
       }
     }
     if (buttonId === 'button3') {
-      // Jump backward by 5 seconds
+      const newRate = playbackRate === 1.2 ? 1 : 1.2; // Toggle between normal and sped up
+      setPlaybackRate(newRate); // Set the global playback rate for audio
       if (sound) {
-        sound.seek(Math.max(0, sound.seek() - 5)); // Seek back for audio
-      } else if (videoRef.current) {
-        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5); // Seek back for video
+        sound.rate(newRate); // Set the playback rate for audio
+      }
+      if (videoRef.current) {
+        videoRef.current.playbackRate = newRate; // Set the playback rate for video
       }
     }
     if (buttonId === 'button4') {
-      // Jump forward by 5 seconds
-      if (sound) {
-        sound.seek(Math.min(sound.duration(), sound.seek() + 5)); // Seek forward for audio
-      } else if (videoRef.current && videoRef.current.duration) {
-        videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5); // Seek forward for video
-      }
-    }
-    if (buttonId === 'button5') {
-      // Reset playback speed to 1x
-      setPlaybackRate(1); // Set global playback rate state
-      if (sound) {
-        sound.rate(1); // Set playback rate for audio
-      }
-      if (videoRef.current) {
-        videoRef.current.playbackRate = 1; // Set playback rate for video
-      }
-    }
-    if (buttonId === 'button6') {
       // Set playback speed to 1.5x
-      const newRate = 1.5; // Define the new rate
+      const newRate = playbackRate === 1.5 ? 1 : 1.5; // Define the new rate
       setPlaybackRate(newRate); // Set global playback rate state
       if (sound) {
         sound.rate(newRate); // Set playback rate for audio
@@ -348,6 +362,28 @@ function App() {
     }
     if (buttonId === 'button10') {
       console.log("Button 10 clicked"); // Placeholder effect
+    }
+  };
+
+  // New handler for seek buttons (5 and 6) that does not toggle pressedButton
+  const handleSeekButtonClick = (buttonId) => {
+    if (buttonId === 'button5') {
+      // Jump backward by 5 seconds
+      if (sound) {
+        sound.seek(Math.max(0, sound.seek() - 5)); // Seek back for audio
+      } else if (videoRef.current) {
+        videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5); // Seek back for video
+      }
+      temporarilyChangeText('-5 seconds');
+    }
+    if (buttonId === 'button6') {
+      // Jump forward by 5 seconds
+      if (sound) {
+        sound.seek(Math.min(sound.duration(), sound.seek() + 5)); // Seek forward for audio
+      } else if (videoRef.current && videoRef.current.duration) {
+        videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5); // Seek forward for video
+      }
+      temporarilyChangeText('+5 seconds');
     }
   };
 
@@ -409,6 +445,17 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    const stored = localStorage.getItem('mediaSourcePath');
+    if (stored) {
+      setMediaSourcePath(stored);
+    } else if (window.electronAPI && window.electronAPI.getMusicPath) {
+      window.electronAPI.getMusicPath().then((musicPath) => {
+        setMediaSourcePath(musicPath);
+      });
+    }
+  }, []);
+
   if (files.length === 0) return <div className="app">Loading media files...</div>;
 
   return (
@@ -419,40 +466,40 @@ function App() {
         <button className="window-btn close">✕</button>
       </div>
       <div className="player-container">
-        <img id={'background'} src="/media player components/background.png" alt="Next" style={{ position: 'absolute' }} />
-        <img id={'screen'} src="/media player components/screen.png" alt="Next" style={{ position: 'absolute'}} />
+        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background.png'} alt="Next" style={{ position: 'absolute' }} />
+        <img id={'screen'} src={process.env.PUBLIC_URL + '/media player components/screen.png'} alt="Next" style={{ position: 'absolute'}} />
         
         {/* Navigation buttons */}
-        <img id="button1" className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} src="/media player components/1-2.png" alt="Button Image" onClick={() => { handleButtonClick('button1'); temporarilyChangeText('Slow Mo!'); }} />
-        <img id="button2" className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} src="/media player components/2-2.png" alt="Button Image" onClick={() => { handleButtonClick('button2'); temporarilyChangeText('Speed Up!'); }} />
-        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src="/media player components/3-2.png" alt="Button Image" onClick={() => { handleButtonClick('button3'); temporarilyChangeText('Rewind!'); }} />
-        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src="/media player components/4-2.png" alt="Button Image" onClick={() => { handleButtonClick('button4'); temporarilyChangeText('Fast Forward!'); }} />
-        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src="/media player components/5-2.png" alt="Button Image" onClick={() => { handleButtonClick('button5'); temporarilyChangeText('Normal Speed!'); }} />
-        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src="/media player components/6-2.png" alt="Button Image" onClick={() => { handleButtonClick('button6'); temporarilyChangeText('Double Time!'); }} />
+        <img id="button1" className={`navbuttons ${pressedButton === 'button1' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/1-2.png'} alt="Button Image" onClick={() => { handleButtonClick('button1'); temporarilyChangeText('Slow 1!'); }} />
+        <img id="button2" className={`navbuttons ${pressedButton === 'button2' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/2-2.png'} alt="Button Image" onClick={() => { handleButtonClick('button2'); temporarilyChangeText('Slow 2!'); }} />
+        <img id="button3" className={`navbuttons ${pressedButton === 'button3' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/3-2.png'} alt="Button Image" onClick={() => { handleButtonClick('button3'); temporarilyChangeText('Speed1!'); }} />
+        <img id="button4" className={`navbuttons ${pressedButton === 'button4' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/4-2.png'} alt="Button Image" onClick={() => { handleButtonClick('button4'); temporarilyChangeText('Speed2!'); }} />
+        <img id="button5" className={`navbuttons ${pressedButton === 'button5' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/5-2.png'} alt="Button Image" onClick={() => handleSeekButtonClick('button5')} />
+        <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/6-2.png'} alt="Button Image" onClick={() => handleSeekButtonClick('button6')} />
 
         
-        <img id="aud" className="navbuttons" src="/media player components/aud-2.png" alt="Button Image" onClick={() => handleButtonClick('aud')} />
-        <img id="dsc" className="navbuttons" src="/media player components/dsc-2.png" alt="Button Image" onClick={() => handleButtonClick('dsc')} />
-        <img id="clock" className="navbuttons" src="/media player components/clock-2.png" alt="Button Image" onClick={handleClockClick} />
-        <img id="ba" className="navbuttons" src="/media player components/ba-2.png" alt="Button Image" onClick={() => handleButtonClick('ba')} />
-        <img id="rel" className="navbuttons" src="/media player components/rel-2.png" alt="Button Image" onClick={() => handleButtonClick('rel')} />
+        <img id="aud" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/aud-2.png'} alt="Button Image" onClick={() => handleButtonClick('aud')} />
+        <img id="dsc" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/dsc-2.png'} alt="Button Image" onClick={handleSourceButtonClick} />
+        <img id="clock" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/clock-2.png'} alt="Button Image" onClick={handleClockClick} />
+        <img id="ba" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/ba-2.png'} alt="Button Image" onClick={() => handleButtonClick('ba')} />
+        <img id="rel" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/rel-2.png'} alt="Button Image" onClick={() => handleButtonClick('rel')} />
 
-        <img id="on" className="roundButtons" onClick={togglePlayPause} src={isPlaying ? "/media player components/on.png" : "/media player components/play.png"} alt={isPlaying ? "Play Button" : "Pause Button"} />
+        <img id="on" className="roundButtons" onClick={togglePlayPause} src={isPlaying ? process.env.PUBLIC_URL + '/media player components/on.png' : process.env.PUBLIC_URL + '/media player components/play.png'} alt={isPlaying ? "Play Button" : "Pause Button"} />
         
-        <img id="skipL" className="skipButtons" onClick={prevTrack} src="/media player components/skipL.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <img id="skipL" className="skipButtons" onClick={prevTrack} src={process.env.PUBLIC_URL + '/media player components/skipL.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask skipL-mask" onClick={prevTrack}></div>
         
-        <img id="skipR" className="skipButtons" onClick={nextTrack} src="/media player components/skipR.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <img id="skipR" className="skipButtons" onClick={nextTrack} src={process.env.PUBLIC_URL + '/media player components/skipR.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask skipR-mask" onClick={nextTrack}></div>
         
-        <img id="topS" className="skipButtons" src="/media player components/topS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <img id="topS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/topS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask topS-mask" onClick={() => {
           const newVolume = Math.min(volume + 0.1, 1);
           setVolume(newVolume);
           if (sound) sound.volume(newVolume);
         }}></div>
         
-        <img id="bottomS" className="skipButtons" src="/media player components/bottomS.png" alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <img id="bottomS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/bottomS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask bottomS-mask" onClick={() => {
           const newVolume = Math.max(volume - 0.1, 0);
           setVolume(newVolume);
@@ -474,9 +521,9 @@ function App() {
         {currentFile && (
           <>
             {currentFile.type.startsWith("video") ? (
-              <video ref={videoRef} src={currentFile.src} className="video" autoPlay muted />
+              <video ref={videoRef} src={currentFile.fileUrl} className="video" autoPlay muted />
             ) : (
-              <audio ref={mediaRef} src={currentFile.src} className="audio" onClick={togglePlayPause} />
+              <audio ref={mediaRef} src={currentFile.fileUrl} className="audio" onClick={togglePlayPause} />
             )}
           </>
         )}
@@ -486,7 +533,7 @@ function App() {
               {isPlaying ? "❚❚" : "▶"}
             </button>
           </div>
-          <div className="progress-bar" ref={progressRef} onMouseDown={handleProgressMouseDown}>
+          <div className={`progress-bar${currentFile.type.startsWith('video') ? ' video-progress-bar' : ''}`} ref={progressRef} onMouseDown={handleProgressMouseDown}>
             <div className="progress" style={{ width: `${progress}%` }}></div>
           </div>
 
@@ -513,7 +560,7 @@ function App() {
         <div className="video-modal">
           <div className="modal-content">
             <span className="close" onClick={() => setIsVideoModalOpen(false)}>&times;</span>
-            <video ref={mediaRef} src={currentFile.src} className="video" controls />
+            <video ref={mediaRef} src={currentFile.fileUrl} className="video" controls />
           </div>
         </div>
       )}

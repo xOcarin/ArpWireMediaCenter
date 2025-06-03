@@ -95,12 +95,18 @@
 /* Video styling with locked size */
 .video {
   position: absolute;
-  top: 22vh;
-  left: 25vw;
-  width: 50%;
-  height: 50%;
+  top: 27vh;
+  left: 27.2vw;
+  width: 45%;
+  height: 40%;
   z-index: 10; /* Adjust z-index if necessary */
+  background: radial-gradient(circle, #888888, #000000);
+  border-radius: 15px;
+
+  /* left: 39.2vw;
+  width: 20%; */
 }
+
 
 /* Audio element styling */
 .audio {
@@ -147,7 +153,11 @@
   /* Changes cursor to indicate clickable */
   position: absolute;
   bottom: 110px;
-  z-index: 5;
+  z-index: 11;
+}
+
+.video-progress-bar {
+  bottom: 75px !important;
 }
 
 /* Progress fill */
