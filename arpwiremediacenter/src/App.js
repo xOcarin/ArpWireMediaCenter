@@ -456,8 +456,6 @@ function App() {
     }
   }, []);
 
-  if (files.length === 0) return <div className="app">Loading media files...</div>;
-
   return (
     <div className="app">
       <div className="title-bar">
@@ -506,21 +504,20 @@ function App() {
           if (sound) sound.volume(newVolume);
         }}></div>
 
-{/* Apply the hidden class when tempFileName is set */}
-<p className={`file-name ${shouldScroll && !tempFileName ? 'scroll' : 'hidden'}`} ref={fileNameRef}>
-  <span id="filenameText">{tempFileName || currentFile.name}</span>
-</p>
+        {/* Show appropriate message when no media is loaded */}
+        <p className={`file-name ${shouldScroll && !tempFileName ? 'scroll' : 'hidden'}`} ref={fileNameRef}>
+          <span id="filenameText">
+            {tempFileName || (files.length === 0 ? 'No media loaded - Click DSC to select media folder' : currentFile.name)}
+          </span>
+        </p>
 
-{/* Show time-display only when tempFileName is present */}
-{tempFileName && (
-  <p className="time-display">{tempFileName}</p>
-)}
+        {tempFileName && (
+          <p className="time-display">{tempFileName}</p>
+        )}
 
-
-
-        {currentFile && (
+        {currentFile && files.length > 0 && (
           <>
-            {currentFile.type.startsWith("video") ? (
+            {currentFile.type && currentFile.type.startsWith("video") ? (
               <video ref={videoRef} src={currentFile.fileUrl} className="video" autoPlay muted />
             ) : (
               <audio ref={mediaRef} src={currentFile.fileUrl} className="audio" onClick={togglePlayPause} />
@@ -533,7 +530,7 @@ function App() {
               {isPlaying ? "❚❚" : "▶"}
             </button>
           </div>
-          <div className={`progress-bar${currentFile.type.startsWith('video') ? ' video-progress-bar' : ''}`} ref={progressRef} onMouseDown={handleProgressMouseDown}>
+          <div className={`progress-bar${currentFile && currentFile.type && currentFile.type.startsWith('video') ? ' video-progress-bar' : ''}`} ref={progressRef} onMouseDown={handleProgressMouseDown}>
             <div className="progress" style={{ width: `${progress}%` }}></div>
           </div>
 
