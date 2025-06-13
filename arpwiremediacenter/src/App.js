@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
-import AudioVisualizer from './AudioVisualizer'; 
 import { Howl } from 'howler'; // Import Howler
 
 function App() {
@@ -24,18 +23,16 @@ function App() {
   const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false); // New state for video modal visibility
   const videoRef = useRef(null); // Reference for the video element
-
+  const visualizerRef = useRef(null); // Reference for the visualizer canvas
+  const animationFrameRef = useRef(null); // Reference for animation frame
+  const [audioContext, setAudioContext] = useState(null);
+  const [audioAnalyser, setAudioAnalyser] = useState(null);
+  const [isVisualizerPressed, setIsVisualizerPressed] = useState(false);
+  const [isSkipRTilted, setIsSkipRTilted] = useState(false);
+  const [isSkipLTilted, setIsSkipLTilted] = useState(false);
 
   const [displayText, setDisplayText] = useState("Default Text");
   const [isChangingText, setIsChangingText] = useState(false);
-
- 
-
-  
-
-
-  
-
 
   // Function to load media files from a folder
   const loadMediaFiles = async (folderPath) => {
@@ -213,40 +210,62 @@ function App() {
       }
       
       // Define elements to toggle based on media type
-      const audioOnlyElements = ['aud', 'screen', 'filenameText']; // Add other audio-specific element IDs here
-      const videoOnlyElements = []; // Add video-specific element IDs here if needed later
+      const audioOnlyElements = ['aud', 'screen', 'filenameText'];
+      const videoOnlyElements = [];
 
       // Use Howler for audio playback for all types
       const newSound = new Howl({
         src: [currentFile.absPath],
         volume: volume,
         rate: playbackRate,
+        html5: false, // Use HTML4 Audio
         onplay: () => {
           setIsPlaying(true);
           if (currentFile.type.startsWith("video")) {
             if (videoRef.current) {
-              videoRef.current.play(); // Play the video when the audio starts
+              videoRef.current.play();
             }
           }
         },
         onpause: () => {
           setIsPlaying(false);
-          if (videoRef.current) {
-            videoRef.current.pause(); // Pause the video when the audio is paused
+          if (currentFile.type.startsWith("video")) {
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
           }
         },
-        onend: nextTrack, // Automatically go to the next track when the current one ends
+        onend: nextTrack,
+        onload: () => {
+          console.log('Sound loaded, setting up analyzer');
+          // Set up audio analyzer after sound is loaded
+          if (newSound._sounds[0] && newSound._sounds[0]._node) {
+            try {
+              const audioContext = newSound._sounds[0]._node.context;
+              const analyser = audioContext.createAnalyser();
+              analyser.fftSize = 256;
+              newSound._sounds[0]._node.connect(analyser);
+              analyser.connect(audioContext.destination);
+              setAudioAnalyser(analyser);
+              console.log('Audio analyzer set up successfully');
+            } catch (error) {
+              console.error('Error setting up audio analyzer:', error);
+            }
+          } else {
+            console.log('Sound node not available for analyzer setup');
+          }
+        }
       });
       setSound(newSound);
-      newSound.play(); // Start playing the new track
+      newSound.play();
       
       // Toggle element visibility based on file type
       if (currentFile.type.startsWith("video")) {
-        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, false)); // Hide audio-only elements
-        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, true)); // Show video-only elements
+        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, false));
+        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, true));
       } else {
-        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, true)); // Show audio-only elements
-        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, false)); // Hide video-only elements
+        audioOnlyElements.forEach(id => toggleElementVisibilityById(id, true));
+        videoOnlyElements.forEach(id => toggleElementVisibilityById(id, false));
       }
     }
     // Cleanup function to stop the sound when the component unmounts or track changes
@@ -255,7 +274,7 @@ function App() {
         sound.stop();
       }
     };
-  }, [currentFile]); // This will run when tshe track changes
+  }, [currentFile]);
 
   // Event listeners for video playback
   useEffect(() => {
@@ -306,10 +325,15 @@ function App() {
 
   // Handle button clicks
   const handleButtonClick = (buttonId) => {
-    setPressedButton((prevButton) => (prevButton === buttonId ? null : buttonId));
     if (buttonId === 'aud') {
-      setShowVisualizer((prev) => !prev); // Toggle visualizer
+      console.log('Toggling visualizer, current state:', showVisualizer);
+      setShowVisualizer((prev) => !prev);
+      console.log('New visualizer state:', !showVisualizer);
+      setIsVisualizerPressed((prev) => !prev);
+    } else {
+      setPressedButton((prevButton) => (prevButton === buttonId ? null : buttonId));
     }
+    
     if (buttonId === 'button1') {
       const newRate = playbackRate === 0.6 ? 1 : 0.6; // Toggle between normal and slowed down
       setPlaybackRate(newRate); // Set the global playback rate for audio
@@ -416,7 +440,7 @@ function App() {
     const timeout = setTimeout(() => {
       setTempFileName(null); // Revert back to original file name after 3 seconds
       setShouldScroll(true); // Re-enable scrolling after reverting
-    }, 3000);
+    }, 1500);
   
     setTempFileNameTimeout(timeout); // Store the timeout ID to clear it later
   };
@@ -431,7 +455,7 @@ function App() {
     const timeout = setTimeout(() => {
       setTempFileName(null); // Revert text after 3 seconds
       setShouldScroll(true); // Re-enable scrolling
-    }, 3000);
+    }, 1500);
   
     setTempFileNameTimeout(timeout); // Store timeout ID for cleanup
   };
@@ -456,6 +480,104 @@ function App() {
     }
   }, []);
 
+  // Modify the visualizer effect
+  useEffect(() => {
+    console.log('Visualizer effect running:', { 
+      showVisualizer, 
+      hasSound: !!sound,
+      hasAnalyser: !!audioAnalyser
+    });
+    
+    if (showVisualizer && sound && audioAnalyser) {
+      try {
+        // Start animation
+        console.log('Starting visualizer animation');
+        drawVisualizer();
+      } catch (error) {
+        console.error('Error setting up visualizer:', error);
+      }
+    } else {
+      // Clean up animation frame
+      if (animationFrameRef.current) {
+        console.log('Cleaning up visualizer animation');
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+    
+    return () => {
+      if (animationFrameRef.current) {
+        console.log('Cleaning up visualizer animation on unmount');
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [showVisualizer, sound, audioAnalyser]);
+
+  // Modify the drawVisualizer function
+  const drawVisualizer = () => {
+    if (!visualizerRef.current || !audioAnalyser) {
+      console.log('Visualizer or analyzer not ready:', { 
+        hasVisualizer: !!visualizerRef.current, 
+        hasAnalyser: !!audioAnalyser
+      });
+      return;
+    }
+    
+    try {
+      const canvas = visualizerRef.current;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      // Clear the canvas
+      ctx.clearRect(0, 0, width, height);
+      
+      const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+      audioAnalyser.getByteFrequencyData(dataArray);
+      
+      // Draw the visualization
+      const barWidth = (width / dataArray.length) * 2.5;
+      let x = 0;
+      
+      for (let i = 0; i < dataArray.length; i++) {
+        const barHeight = (dataArray[i] / 255) * height;
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, height, 0, 0);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(1, '#000000');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+        
+        x += barWidth + 1;
+      }
+      
+      // Request next frame
+      animationFrameRef.current = requestAnimationFrame(drawVisualizer);
+    } catch (error) {
+      console.error('Error in drawVisualizer:', error);
+    }
+  };
+
+  // Add these handlers
+  const handleSkipRMouseDown = () => {
+    setIsSkipRTilted(true);
+  };
+
+  const handleSkipRMouseUp = () => {
+    setIsSkipRTilted(false);
+  };
+
+  const handleSkipLMouseDown = () => {
+    setIsSkipLTilted(true);
+  };
+
+  const handleSkipLMouseUp = () => {
+    setIsSkipLTilted(false);
+  };
+
+  if (files.length === 0) return <div className="app">Loading media files...</div>;
+
   return (
     <div className="app">
       <div className="title-bar">
@@ -476,7 +598,17 @@ function App() {
         <img id="button6" className={`navbuttons ${pressedButton === 'button6' ? 'active' : ''}`} src={process.env.PUBLIC_URL + '/media player components/6-2.png'} alt="Button Image" onClick={() => handleSeekButtonClick('button6')} />
 
         
-        <img id="aud" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/aud-2.png'} alt="Button Image" onClick={() => handleButtonClick('aud')} />
+        <img 
+          id="aud" 
+          className={`navbuttons ${isVisualizerPressed ? 'active' : ''}`} 
+          src={process.env.PUBLIC_URL + '/media player components/aud-2.png'} 
+          alt="Button Image" 
+          onClick={() => {
+            console.log('Aud button clicked');
+            handleButtonClick('aud');
+            temporarilyChangeText(showVisualizer ? 'Visualizer Off' : 'Visualizer On');
+          }} 
+        />
         <img id="dsc" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/dsc-2.png'} alt="Button Image" onClick={handleSourceButtonClick} />
         <img id="clock" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/clock-2.png'} alt="Button Image" onClick={handleClockClick} />
         <img id="ba" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/ba-2.png'} alt="Button Image" onClick={() => handleButtonClick('ba')} />
@@ -484,11 +616,43 @@ function App() {
 
         <img id="on" className="roundButtons" onClick={togglePlayPause} src={isPlaying ? process.env.PUBLIC_URL + '/media player components/on.png' : process.env.PUBLIC_URL + '/media player components/play.png'} alt={isPlaying ? "Play Button" : "Pause Button"} />
         
-        <img id="skipL" className="skipButtons" onClick={prevTrack} src={process.env.PUBLIC_URL + '/media player components/skipL.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask skipL-mask" onClick={prevTrack}></div>
+        <img 
+          id="skipL" 
+          className={`skipButtons ${isSkipLTilted ? 'tilted' : ''}`} 
+          onClick={prevTrack} 
+          src={process.env.PUBLIC_URL + '/media player components/skipL.png'} 
+          alt="Button Image" 
+          style={{ pointerEvents: 'none' }} 
+          onMouseDown={handleSkipLMouseDown}
+          onMouseUp={handleSkipLMouseUp}
+          onMouseLeave={handleSkipLMouseUp}
+        />
+        <div 
+          className="skipButton-mask skipL-mask" 
+          onClick={prevTrack}
+          onMouseDown={handleSkipLMouseDown}
+          onMouseUp={handleSkipLMouseUp}
+          onMouseLeave={handleSkipLMouseUp}
+        ></div>
         
-        <img id="skipR" className="skipButtons" onClick={nextTrack} src={process.env.PUBLIC_URL + '/media player components/skipR.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask skipR-mask" onClick={nextTrack}></div>
+        <img 
+          id="skipR" 
+          className={`skipButtons ${isSkipRTilted ? 'tilted' : ''}`} 
+          onClick={nextTrack} 
+          src={process.env.PUBLIC_URL + '/media player components/skipR.png'} 
+          alt="Button Image" 
+          style={{ pointerEvents: 'none' }} 
+          onMouseDown={handleSkipRMouseDown}
+          onMouseUp={handleSkipRMouseUp}
+          onMouseLeave={handleSkipRMouseUp}
+        />
+        <div 
+          className="skipButton-mask skipR-mask" 
+          onClick={nextTrack}
+          onMouseDown={handleSkipRMouseDown}
+          onMouseUp={handleSkipRMouseUp}
+          onMouseLeave={handleSkipRMouseUp}
+        ></div>
         
         <img id="topS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/topS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask topS-mask" onClick={() => {
@@ -504,20 +668,36 @@ function App() {
           if (sound) sound.volume(newVolume);
         }}></div>
 
-        {/* Show appropriate message when no media is loaded */}
-        <p className={`file-name ${shouldScroll && !tempFileName ? 'scroll' : 'hidden'}`} ref={fileNameRef}>
-          <span id="filenameText">
-            {tempFileName || (files.length === 0 ? 'No media loaded - Click DSC to select media folder' : currentFile.name)}
-          </span>
+        {showVisualizer && (
+          <canvas
+            ref={visualizerRef}
+            className="visualizer"
+            width={300}
+            height={40}
+            style={{
+              position: 'absolute',
+              top: '40%',
+              left: '50%',
+              transform: 'translateX(-48%)',
+              width: '46%',
+              height: '40px',
+              zIndex: tempFileName ? 1 : 1000000,
+              visibility: tempFileName ? 'hidden' : 'visible'
+            }}
+          />
+        )}
+
+        <p className={`file-name ${shouldScroll && !tempFileName && !showVisualizer ? 'scroll' : 'hidden'}`} ref={fileNameRef}>
+          <span id="filenameText">{tempFileName || currentFile.name}</span>
         </p>
 
         {tempFileName && (
-          <p className="time-display">{tempFileName}</p>
+          <p className="time-display" style={{ zIndex: 1000001 }}>{tempFileName}</p>
         )}
 
-        {currentFile && files.length > 0 && (
+        {currentFile && (
           <>
-            {currentFile.type && currentFile.type.startsWith("video") ? (
+            {currentFile.type.startsWith("video") ? (
               <video ref={videoRef} src={currentFile.fileUrl} className="video" autoPlay muted />
             ) : (
               <audio ref={mediaRef} src={currentFile.fileUrl} className="audio" onClick={togglePlayPause} />
@@ -530,7 +710,7 @@ function App() {
               {isPlaying ? "❚❚" : "▶"}
             </button>
           </div>
-          <div className={`progress-bar${currentFile && currentFile.type && currentFile.type.startsWith('video') ? ' video-progress-bar' : ''}`} ref={progressRef} onMouseDown={handleProgressMouseDown}>
+          <div className={`progress-bar${currentFile.type.startsWith('video') ? ' video-progress-bar' : ''}`} ref={progressRef} onMouseDown={handleProgressMouseDown}>
             <div className="progress" style={{ width: `${progress}%` }}></div>
           </div>
 
@@ -550,7 +730,6 @@ function App() {
           </div>
         </div>
       </div>
-      {showVisualizer && <AudioVisualizer mediaRef={mediaRef} />} {/* Render visualizer conditionally */}
 
       {/* Video Modal */}
       {isVideoModalOpen && (
