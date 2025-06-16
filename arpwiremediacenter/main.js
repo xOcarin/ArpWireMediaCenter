@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require('fs');
+const isDev = require('electron-is-dev');
 
 try {
     require("electron-reloader")(module);
@@ -23,41 +24,65 @@ function createWindow() {
         roundedCorners: true,
     });
 
-    const startUrl = process.env.ELECTRON_START_URL || `file://${path.join(__dirname, 'build', 'index.html')}`;
+    const startUrl = isDev 
+        ? 'http://localhost:3000'
+        : `file://${path.join(__dirname, 'build', 'index.html')}`;
     win.loadURL(startUrl);
 
-    win.setAlwaysOnTop(true,"screen");
     // Handle minimize and close events
-    // ipcMain.on("minimize-window", () => win.minimize());
-    // ipcMain.on("close-window", () => win.close());
+    ipcMain.on("minimize-window", () => win.minimize());
+    ipcMain.on("close-window", () => win.close());
 
     // Handle folder selection from renderer
     ipcMain.handle('dialog:openDirectory', async () => {
         const result = await dialog.showOpenDialog(win, {
-            properties: ['openDirectory']
+            properties: ['openDirectory', 'openFile'],
+            filters: [
+                { name: 'Media Files', extensions: ['mp3', 'wav', 'mp4'] }
+            ]
         });
         if (!result.canceled && result.filePaths.length > 0) {
-            return result.filePaths[0];
+            // Store the selected path
+            const selectedPath = result.filePaths[0];
+            app.setPath('userData', selectedPath);
+            return selectedPath;
         }
         return null;
     });
 
     ipcMain.handle('get-media-files', async (event, folderPath) => {
-        const files = fs.readdirSync(folderPath)
-            .filter(file => /\.(mp3|wav|mp4)$/i.test(file))
-            .map(file => {
-                const absPath = path.join(folderPath, file);
-                return {
-                    name: file,
-                    absPath, // for Howler
-                    fileUrl: 'file://' + absPath.replace(/\\/g, '/'), // for <audio>/<video>
-                    type: file.endsWith('.mp4') ? 'video/mp4' : 'audio/mpeg',
-                };
-            });
-        return files;
+        try {
+            const files = fs.readdirSync(folderPath)
+                .map(file => {
+                    const absPath = path.join(folderPath, file);
+                    const stats = fs.statSync(absPath);
+                    return {
+                        name: file,
+                        path: absPath,
+                        isDirectory: stats.isDirectory(),
+                        type: file.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'audio/mpeg'
+                    };
+                })
+                .filter(file => {
+                    if (file.isDirectory) return false; // Don't include directories
+                    const ext = file.name.toLowerCase().split('.').pop();
+                    return ['mp3', 'wav', 'mp4'].includes(ext);
+                });
+            console.log('Found files:', files); // Debug log
+            return files;
+        } catch (error) {
+            console.error('Error reading directory:', error);
+            return [];
+        }
     });
 
     ipcMain.handle('get-music-path', () => {
+        // Try to get the stored path first
+        const storedPath = app.getPath('userData');
+        if (storedPath && fs.existsSync(storedPath)) {
+            return storedPath;
+        }
+        // Fallback to default music path
         return app.getPath('music');
     });
 }

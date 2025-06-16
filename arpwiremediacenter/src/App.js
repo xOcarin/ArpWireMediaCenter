@@ -30,6 +30,17 @@ function App() {
   const [isVisualizerPressed, setIsVisualizerPressed] = useState(false);
   const [isSkipRTilted, setIsSkipRTilted] = useState(false);
   const [isSkipLTilted, setIsSkipLTilted] = useState(false);
+  const [isTopSTilted, setIsTopSTilted] = useState(false);
+  const [isBottomSTilted, setIsBottomSTilted] = useState(false);
+  const [showDisc, setShowDisc] = useState(false);
+  const [canTriggerDisc, setCanTriggerDisc] = useState(true);
+  const [discs, setDiscs] = useState([]);
+  const [sheep, setSheep] = useState([]);
+  const [canTriggerSheep, setCanTriggerSheep] = useState(true);
+  const [sheepSound] = useState(new Howl({
+    src: [process.env.PUBLIC_URL + '/media player components/sheep.mp3'],
+    volume: 1.0
+  }));
 
   const [displayText, setDisplayText] = useState("Default Text");
   const [isChangingText, setIsChangingText] = useState(false);
@@ -42,11 +53,45 @@ function App() {
 
     // Use IPC to get file list from main process
     if (window.electronAPI && window.electronAPI.getMediaFiles) {
-      const mediaFiles = await window.electronAPI.getMediaFiles(folderPath);
-      setFiles(mediaFiles);
-      setCurrentIndex(0); // Optionally reset to first file
+      try {
+        const items = await window.electronAPI.getMediaFiles(folderPath);
+        
+        // Filter for media files and add their full paths
+        const validMediaFiles = items
+          .filter(file => {
+            if (file.isDirectory) return false;
+            const ext = file.name.toLowerCase().split('.').pop();
+            return ['mp3', 'wav', 'mp4'].includes(ext);
+          })
+          .map(file => ({
+            ...file,
+            absPath: file.path,
+            fileUrl: 'file://' + file.path.replace(/\\/g, '/'),
+            type: file.name.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'audio/mpeg'
+          }));
+        
+        console.log('Found media files:', validMediaFiles); // Debug log
+        setFiles(validMediaFiles);
+        setCurrentIndex(0); // Reset to first file
+      } catch (error) {
+        console.error('Error loading media files:', error);
+      }
     }
   };
+
+  // Load media files
+  useEffect(() => {
+    const loadInitialMediaFiles = async () => {
+      if (mediaSourcePath) {
+        // Only load files if we have a path
+        await loadMediaFiles(mediaSourcePath);
+      } else {
+        // If no path, just set empty files array
+        setFiles([]);
+      }
+    };
+    loadInitialMediaFiles();
+  }, [mediaSourcePath]);
 
   // Handler for the src (dsc) button
   const handleSourceButtonClick = async () => {
@@ -56,30 +101,9 @@ function App() {
     }
     const folderPath = await window.electronAPI.selectFolder();
     if (folderPath) {
-      loadMediaFiles(folderPath);
+      await loadMediaFiles(folderPath);
     }
   };
-
-  // Load media files
-  useEffect(() => {
-    const importMediaFiles = async () => {
-      if (mediaSourcePath && window.electronAPI && window.electronAPI.getMediaFiles) {
-        // Use the selected folder
-        const mediaFiles = await window.electronAPI.getMediaFiles(mediaSourcePath);
-        setFiles(mediaFiles);
-      } else {
-        // Fallback to bundled media
-        const context = require.context("./media", false, /\.(mp3|wav|mp4)$/);
-        const mediaFiles = context.keys().map((file) => ({
-          name: file.replace("./", ""),
-          src: context(file),
-          type: file.endsWith(".mp4") ? "video/mp4" : "audio/mpeg",
-        }));
-        setFiles(mediaFiles);
-      }
-    };
-    importMediaFiles();
-  }, [mediaSourcePath]);
 
   // Define currentFile after files are set
   const currentFile = files[currentIndex]; // Ensure this is defined after files are populated
@@ -576,14 +600,105 @@ function App() {
     setIsSkipLTilted(false);
   };
 
-  if (files.length === 0) return <div className="app">Loading media files...</div>;
+  const handleTopSMouseDown = () => {
+    setIsTopSTilted(true);
+  };
+
+  const handleTopSMouseUp = () => {
+    setIsTopSTilted(false);
+  };
+
+  const handleBottomSMouseDown = () => {
+    setIsBottomSTilted(true);
+  };
+
+  const handleBottomSMouseUp = () => {
+    setIsBottomSTilted(false);
+  };
+
+  // Add this handler
+  const handleRelClick = () => {
+    if (canTriggerDisc) {
+      const newDiscId = Date.now(); // Create unique ID for the disc
+      setDiscs(prev => [...prev, newDiscId]);
+      setCanTriggerDisc(false);
+      
+      // Re-enable the button after 2 seconds
+      setTimeout(() => {
+        setCanTriggerDisc(true);
+        // Remove the disc after animation completes
+        setDiscs(prev => prev.filter(id => id !== newDiscId));
+      }, 2000);
+    }
+  };
+
+  const handleBaClick = () => {
+    if (canTriggerSheep) {
+      const newSheepId = Date.now();
+      setSheep(prev => [...prev, newSheepId]);
+      setCanTriggerSheep(false);
+      
+      // Play the sheep sound
+      sheepSound.play();
+      
+      // Remove the sheep after a brief moment
+      setTimeout(() => {
+        setCanTriggerSheep(true);
+        setSheep(prev => prev.filter(id => id !== newSheepId));
+      }, 800);
+    }
+  };
+
+  if (files.length === 0) return (
+    <div className="app">
+      <div className="title-bar">
+        <div className="drag-region"></div>
+        <button className="window-btn" onClick={() => window.electronAPI.minimizeWindow()}>—</button>
+        <button className="window-btn close" onClick={() => window.electronAPI.closeWindow()}>✕</button>
+      </div>
+      <div className="player-container">
+        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background.png'} alt="Next" style={{ position: 'absolute' }} />
+        <img id={'screen'} src={process.env.PUBLIC_URL + '/media player components/screen.png'} alt="Next" style={{ position: 'absolute'}} />
+        
+        {/* Navigation buttons */}
+        <img id="button1" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/1-2.png'} alt="Button Image" />
+        <img id="button2" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/2-2.png'} alt="Button Image" />
+        <img id="button3" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/3-2.png'} alt="Button Image" />
+        <img id="button4" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/4-2.png'} alt="Button Image" />
+        <img id="button5" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/5-2.png'} alt="Button Image" />
+        <img id="button6" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/6-2.png'} alt="Button Image" />
+        
+        <img id="aud" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/aud-2.png'} alt="Button Image" />
+        <img id="dsc" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/dsc-2.png'} alt="Button Image" onClick={handleSourceButtonClick} />
+        <img id="clock" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/clock-2.png'} alt="Button Image" />
+        <img id="ba" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/ba-2.png'} alt="Button Image" />
+        <img id="rel" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/rel-2.png'} alt="Button Image" />
+
+        <img id="on" className="roundButtons" src={process.env.PUBLIC_URL + '/media player components/play.png'} alt="Play Button" />
+        
+        <img id="skipL" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/skipL.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <div className="skipButton-mask skipL-mask"></div>
+        
+        <img id="skipR" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/skipR.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <div className="skipButton-mask skipR-mask"></div>
+        
+        <img id="topS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/topS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <div className="skipButton-mask topS-mask"></div>
+        
+        <img id="bottomS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/bottomS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
+        <div className="skipButton-mask bottomS-mask"></div>
+
+        <p className="file-name">Select a folder to begin</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="app">
       <div className="title-bar">
         <div className="drag-region"></div>
-        <button className="window-btn">—</button>
-        <button className="window-btn close">✕</button>
+        <button className="window-btn" onClick={() => window.electronAPI.minimizeWindow()}>—</button>
+        <button className="window-btn close" onClick={() => window.electronAPI.closeWindow()}>✕</button>
       </div>
       <div className="player-container">
         <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background.png'} alt="Next" style={{ position: 'absolute' }} />
@@ -611,11 +726,41 @@ function App() {
         />
         <img id="dsc" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/dsc-2.png'} alt="Button Image" onClick={handleSourceButtonClick} />
         <img id="clock" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/clock-2.png'} alt="Button Image" onClick={handleClockClick} />
-        <img id="ba" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/ba-2.png'} alt="Button Image" onClick={() => handleButtonClick('ba')} />
-        <img id="rel" className="navbuttons" src={process.env.PUBLIC_URL + '/media player components/rel-2.png'} alt="Button Image" onClick={() => handleButtonClick('rel')} />
+        <img 
+          id="ba" 
+          className={`navbuttons ${!canTriggerSheep ? 'active' : ''}`} 
+          src={process.env.PUBLIC_URL + '/media player components/ba-2.png'} 
+          alt="Button Image" 
+          onClick={handleBaClick} 
+        />
+        <img 
+          id="rel" 
+          className={`navbuttons ${!canTriggerDisc ? 'active' : ''}`} 
+          src={process.env.PUBLIC_URL + '/media player components/rel-2.png'} 
+          alt="Button Image" 
+          onClick={handleRelClick} 
+        />
+
+        {sheep.map(sheepId => (
+          <img 
+            key={sheepId}
+            id="sheep" 
+            className="sheep animate"
+            src={process.env.PUBLIC_URL + '/media player components/sheep.png'} 
+          />
+        ))}
 
         <img id="on" className="roundButtons" onClick={togglePlayPause} src={isPlaying ? process.env.PUBLIC_URL + '/media player components/on.png' : process.env.PUBLIC_URL + '/media player components/play.png'} alt={isPlaying ? "Play Button" : "Pause Button"} />
         
+        {discs.map(discId => (
+          <img 
+            key={discId}
+            id="disc" 
+            className="disc animate"
+            src={process.env.PUBLIC_URL + '/media player components/Disc.png'} 
+          />
+        ))}
+
         <img 
           id="skipL" 
           className={`skipButtons ${isSkipLTilted ? 'tilted' : ''}`} 
@@ -654,19 +799,49 @@ function App() {
           onMouseLeave={handleSkipRMouseUp}
         ></div>
         
-        <img id="topS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/topS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask topS-mask" onClick={() => {
-          const newVolume = Math.min(volume + 0.1, 1);
-          setVolume(newVolume);
-          if (sound) sound.volume(newVolume);
-        }}></div>
+        <img 
+          id="topS" 
+          className={`skipButtons ${isTopSTilted ? 'tilted' : ''}`} 
+          src={process.env.PUBLIC_URL + '/media player components/topS.png'} 
+          alt="Button Image" 
+          style={{ pointerEvents: 'none' }} 
+          onMouseDown={handleTopSMouseDown}
+          onMouseUp={handleTopSMouseUp}
+          onMouseLeave={handleTopSMouseUp}
+        />
+        <div 
+          className="skipButton-mask topS-mask" 
+          onClick={() => {
+            const newVolume = Math.min(volume + 0.1, 1);
+            setVolume(newVolume);
+            if (sound) sound.volume(newVolume);
+          }}
+          onMouseDown={handleTopSMouseDown}
+          onMouseUp={handleTopSMouseUp}
+          onMouseLeave={handleTopSMouseUp}
+        ></div>
         
-        <img id="bottomS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/bottomS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask bottomS-mask" onClick={() => {
-          const newVolume = Math.max(volume - 0.1, 0);
-          setVolume(newVolume);
-          if (sound) sound.volume(newVolume);
-        }}></div>
+        <img 
+          id="bottomS" 
+          className={`skipButtons ${isBottomSTilted ? 'tilted' : ''}`} 
+          src={process.env.PUBLIC_URL + '/media player components/bottomS.png'} 
+          alt="Button Image" 
+          style={{ pointerEvents: 'none' }} 
+          onMouseDown={handleBottomSMouseDown}
+          onMouseUp={handleBottomSMouseUp}
+          onMouseLeave={handleBottomSMouseUp}
+        />
+        <div 
+          className="skipButton-mask bottomS-mask" 
+          onClick={() => {
+            const newVolume = Math.max(volume - 0.1, 0);
+            setVolume(newVolume);
+            if (sound) sound.volume(newVolume);
+          }}
+          onMouseDown={handleBottomSMouseDown}
+          onMouseUp={handleBottomSMouseUp}
+          onMouseLeave={handleBottomSMouseUp}
+        ></div>
 
         {showVisualizer && (
           <canvas

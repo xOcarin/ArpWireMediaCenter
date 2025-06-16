@@ -1,44 +1,71 @@
 {
   "name": "arpwiremediacenter",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "main.js",
+  "description": "fun media center for arpwire",
+  "author": "Ocarin",
   "homepage": ".",
   "dependencies": {
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.2.0",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "electron": "^35.1.2",
+    "electron-is-dev": "^3.0.1",
     "howler": "^2.2.4",
-    "p5": "^1.11.3",
-    "p5.sound": "^0.2.0",
-    "path-browserify": "^1.0.1",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "soundtouchjs": "^0.2.1",
     "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "concurrently": "^6.5.1",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
+    "electron-reloader": "^1.2.3"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron": "electron .",
-    "dev": "concurrently \"npm run start\" \"npm run electron\"",
+    "electron-dev": "electron .",
+    "electron-pack": "electron-builder build --win --publish never",
+    "dist": "electron-builder build --win",
+    "postinstall": "electron-builder install-app-deps",
+    "dev": "concurrently \"npm run start\" \"npm run electron-dev\"",
     "start-electron": "npm run build && electron ."
+  },
+  "build": {
+    "appId": "com.arpwire.mediacenter",
+    "productName": "ArpWire Media Center",
+    "files": [
+      "build/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/media player components/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ArpWire Media Center"
+    }
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
     ]
-  },
-  "devDependencies": {
-    "concurrently": "^6.5.1",
-    "electron": "latest",
-    "electron-reloader": "^1.2.3"
   },
   "browserslist": {
     "production": [

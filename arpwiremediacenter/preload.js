@@ -11,5 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMusicPath: async () => {
     return await ipcRenderer.invoke('get-music-path');
   },
-  sendDSC: (data) => ipcRenderer.send('dsc', data)
+  sendDSC: (data) => ipcRenderer.send('dsc', data),
+  minimizeWindow: () => ipcRenderer.send('minimize-window'),
+  closeWindow: () => ipcRenderer.send('close-window')
 });

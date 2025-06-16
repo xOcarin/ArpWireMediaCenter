@@ -192,19 +192,15 @@
 }
 
 .title-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 30px;
-  background: rgba(0, 0, 0, 0);
-  color: white;
-  -webkit-app-region: drag;
-  /* Makes it draggable */
-  padding: 0 10px;
-  position: absolute;
-  top: 0;
-  width: 100%;
-  overflow: hidden;
+  z-index: 100000;
 }
 
 /* New class for centered time display */
@@ -222,31 +218,42 @@
 }
 
 .drag-region {
-  flex-grow: 1;
-  position: absolute;
-  top:0;
-  width: 100%;
   -webkit-app-region: drag;
-  /* Ensures only this part is draggable */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 1;
+  opacity: 0;
 }
 
 .window-btn {
   background: none;
   border: none;
-  color: white;
+  color: #fff;
   font-size: 16px;
-  padding: 5px 10px;
   cursor: pointer;
   -webkit-app-region: no-drag;
-  /* Allows clicking */
+  z-index: 100000;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window-btn:not(.close) {
+  top: var(--minimize-btn-top);
+  right: var(--minimize-btn-right);
+  width: var(--minimize-btn-width);
+  height: var(--minimize-btn-height);
 }
 
 .window-btn.close {
-  color: red;
-}
-
-.window-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  top: var(--close-btn-top);
+  right: var(--close-btn-right);
+  width: var(--close-btn-width);
+  height: var(--close-btn-height);
 }
 
 #background{
@@ -407,6 +414,7 @@
 #topS{
   bottom: 115px;
   right: 2px;
+  z-index: 1000000;
 }
 
 #bottomS{
@@ -464,4 +472,88 @@
 
 .visualizer {
   z-index: 1000000;
+}
+
+#topS.tilted {
+  transform: rotate3d(1, 0, 0, -15deg);
+}
+
+#bottomS.tilted {
+  transform: rotate3d(1, 0, 0, 15deg);
+}
+
+#disc{
+  z-index: 1000000;
+  width: auto;
+  top: 30px;
+  position: fixed;
+  transform: scale(0.1) translateY(0);
+  opacity: 0;
+  transform-origin: center center;
+  animation: discAnimation 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes discAnimation {
+  0% {
+    transform: scale(0.1) translateY(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2) translateY(-40px);
+    opacity: 1;
+  }
+}
+
+#disc.hidden {
+  transform: scale(0.1) translateY(0);
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s 1.5s;
+}
+
+#sheep {
+  z-index: 1000000;
+  width: 50%;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.1);
+  opacity: 0;
+  transform-origin: center center;
+  animation: sheepAnimation 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes sheepAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.1);
+    opacity: 0;
+  }
+}
+
+:root {
+  /* Window control positioning */
+  --window-controls-top: 0px;
+  --window-controls-right: 0px;
+  
+  /* Minimize button */
+  --minimize-btn-top: 12px;
+  --minimize-btn-right: 120px;
+  --minimize-btn-width: 16px;
+  --minimize-btn-height: 16px;
+  
+  /* Close button */
+  --close-btn-top: 12px;
+  --close-btn-right: 100px;
+  --close-btn-width: 16px;
+  --close-btn-height: 16px;
 }
