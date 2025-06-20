@@ -8,7 +8,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(0); // Volume state (range 0-1)
+  const [volume, setVolume] = useState(.5); // Volume state (range 0-1)
   const [pressedButton, setPressedButton] = useState(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
@@ -676,11 +676,41 @@ function App() {
 
         <img id="on" className="roundButtons" src={process.env.PUBLIC_URL + '/media player components/play.png'} alt="Play Button" />
         
-        <img id="skipL" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/skipL.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask skipL-mask"></div>
-        
-        <img id="skipR" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/skipR.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
-        <div className="skipButton-mask skipR-mask"></div>
+        <img 
+          id="skipL"
+          className={`skipButtons ${isSkipLTilted ? 'tilted' : ''}`}
+          src={process.env.PUBLIC_URL + '/media player components/skipl.png'}
+          alt="Skip Left"
+          onClick={prevTrack}
+          onMouseDown={handleSkipLMouseDown}
+          onMouseUp={handleSkipLMouseUp}
+          onMouseLeave={handleSkipLMouseUp}
+        />
+        <div 
+          className="skipButton-mask skipL-mask"
+          onClick={prevTrack}
+          onMouseDown={handleSkipLMouseDown}
+          onMouseUp={handleSkipLMouseUp}
+          onMouseLeave={handleSkipLMouseUp}
+        />
+
+        <img 
+          id="skipR"
+          className={`skipButtons ${isSkipRTilted ? 'tilted' : ''}`}
+          src={process.env.PUBLIC_URL + '/media player components/skipr.png'}
+          alt="Skip Right"
+          onClick={nextTrack}
+          onMouseDown={handleSkipRMouseDown}
+          onMouseUp={handleSkipRMouseUp}
+          onMouseLeave={handleSkipRMouseUp}
+        />
+        <div 
+          className="skipButton-mask skipR-mask"
+          onClick={nextTrack}
+          onMouseDown={handleSkipRMouseDown}
+          onMouseUp={handleSkipRMouseUp}
+          onMouseLeave={handleSkipRMouseUp}
+        />
         
         <img id="topS" className="skipButtons" src={process.env.PUBLIC_URL + '/media player components/topS.png'} alt="Button Image" style={{ pointerEvents: 'none' }} />
         <div className="skipButton-mask topS-mask"></div>
@@ -762,42 +792,40 @@ function App() {
         ))}
 
         <img 
-          id="skipL" 
-          className={`skipButtons ${isSkipLTilted ? 'tilted' : ''}`} 
-          onClick={prevTrack} 
-          src={process.env.PUBLIC_URL + '/media player components/skipL.png'} 
-          alt="Button Image" 
-          style={{ pointerEvents: 'none' }} 
-          onMouseDown={handleSkipLMouseDown}
-          onMouseUp={handleSkipLMouseUp}
-          onMouseLeave={handleSkipLMouseUp}
-        />
-        <div 
-          className="skipButton-mask skipL-mask" 
+          id="skipL"
+          className={`skipButtons ${isSkipLTilted ? 'tilted' : ''}`}
+          src={process.env.PUBLIC_URL + '/media player components/skipl.png'}
+          alt="Skip Left"
           onClick={prevTrack}
           onMouseDown={handleSkipLMouseDown}
           onMouseUp={handleSkipLMouseUp}
           onMouseLeave={handleSkipLMouseUp}
-        ></div>
+        />
+        <div 
+          className="skipButton-mask skipL-mask"
+          onClick={prevTrack}
+          onMouseDown={handleSkipLMouseDown}
+          onMouseUp={handleSkipLMouseUp}
+          onMouseLeave={handleSkipLMouseUp}
+        />
         
         <img 
-          id="skipR" 
-          className={`skipButtons ${isSkipRTilted ? 'tilted' : ''}`} 
-          onClick={nextTrack} 
-          src={process.env.PUBLIC_URL + '/media player components/skipR.png'} 
-          alt="Button Image" 
-          style={{ pointerEvents: 'none' }} 
+          id="skipR"
+          className={`skipButtons ${isSkipRTilted ? 'tilted' : ''}`}
+          src={process.env.PUBLIC_URL + '/media player components/skipr.png'}
+          alt="Skip Right"
+          onClick={nextTrack}
           onMouseDown={handleSkipRMouseDown}
           onMouseUp={handleSkipRMouseUp}
           onMouseLeave={handleSkipRMouseUp}
         />
         <div 
-          className="skipButton-mask skipR-mask" 
+          className="skipButton-mask skipR-mask"
           onClick={nextTrack}
           onMouseDown={handleSkipRMouseDown}
           onMouseUp={handleSkipRMouseUp}
           onMouseLeave={handleSkipRMouseUp}
-        ></div>
+        />
         
         <img 
           id="topS" 

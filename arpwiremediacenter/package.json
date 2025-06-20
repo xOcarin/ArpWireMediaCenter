@@ -2,7 +2,7 @@
   "name": "arpwiremediacenter",
   "version": "1.0.0",
   "private": true,
-  "main": "main.js",
+  "main": "public/electron.js",
   "description": "fun media center for arpwire",
   "author": "Ocarin",
   "homepage": ".",
@@ -10,7 +10,6 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "electron-is-dev": "^3.0.1",
     "howler": "^2.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -18,10 +17,6 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.4",
-    "@babel/plugin-transform-runtime": "^7.27.4",
-    "@babel/preset-env": "^7.27.2",
-    "@babel/preset-react": "^7.27.1",
     "concurrently": "^6.5.1",
     "electron": "^29.1.0",
     "electron-builder": "^24.13.3",
@@ -44,7 +39,7 @@
     "productName": "ArpWire Media Center",
     "files": [
       "build/**/*",
-      "main.js",
+      "public/electron.js",
       "preload.js"
     ],
     "directories": {
@@ -55,7 +50,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "public/media player components/icon.ico"
+      "icon": "public/media player components/ico.png"
     },
     "nsis": {
       "oneClick": false,
