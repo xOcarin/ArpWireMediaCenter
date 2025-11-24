@@ -1,51 +1,76 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
-import { Howl } from 'howler'; // Import Howler
+import { Howl } from 'howler'; // Import Howler for audio playback
 
+/**
+ * Main App Component - Media Player Application
+ * Handles both audio and video playback with custom UI controls
+ * Uses Howler.js for audio management and native video elements for video playback
+ */
 function App() {
-  // State declarations
-  const [files, setFiles] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(.5); // Volume state (range 0-1)
-  const [pressedButton, setPressedButton] = useState(null);
-  const [shouldScroll, setShouldScroll] = useState(false);
-  const [tempFileName, setTempFileName] = useState(null); // New state for temporary file name
-  const [showVisualizer, setShowVisualizer] = useState(false); // New state for visualizer
-  const [sound, setSound] = useState(null); // New state for Howler sound
-  const [playbackRate, setPlaybackRate] = useState(1); // New state for playback rate
-  const [mediaSourcePath, setMediaSourcePath] = useState('');
-  const mediaRef = useRef(null);
-  const progressRef = useRef(null); // Reference to the progress bar
-  const fileNameRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null);
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false); // New state for video modal visibility
-  const videoRef = useRef(null); // Reference for the video element
-  const visualizerRef = useRef(null); // Reference for the visualizer canvas
-  const animationFrameRef = useRef(null); // Reference for animation frame
-  const [audioContext, setAudioContext] = useState(null);
-  const [audioAnalyser, setAudioAnalyser] = useState(null);
-  const [isVisualizerPressed, setIsVisualizerPressed] = useState(false);
-  const [isSkipRTilted, setIsSkipRTilted] = useState(false);
-  const [isSkipLTilted, setIsSkipLTilted] = useState(false);
-  const [isTopSTilted, setIsTopSTilted] = useState(false);
-  const [isBottomSTilted, setIsBottomSTilted] = useState(false);
-  const [showDisc, setShowDisc] = useState(false);
-  const [canTriggerDisc, setCanTriggerDisc] = useState(true);
-  const [discs, setDiscs] = useState([]);
-  const [sheep, setSheep] = useState([]);
-  const [canTriggerSheep, setCanTriggerSheep] = useState(true);
-  const [sheepSound] = useState(new Howl({
+  // ==================== STATE MANAGEMENT ====================
+  
+  // Media file management
+  const [files, setFiles] = useState([]); // Array of media files loaded from selected folder // Array of media files loaded from selected folder
+  const [currentIndex, setCurrentIndex] = useState(0); // Index of currently playing file
+  const [isPlaying, setIsPlaying] = useState(false); // Playback state
+  const [progress, setProgress] = useState(0); // Playback progress (0-100%)
+  const [volume, setVolume] = useState(.5); // Volume level (0-1 range)
+  const [pressedButton, setPressedButton] = useState(null); // Tracks which control button is active
+  const [shouldScroll, setShouldScroll] = useState(false); // Whether filename should scroll if too long
+  const [tempFileName, setTempFileName] = useState(null); // Temporary text to display instead of filename
+  const [showVisualizer, setShowVisualizer] = useState(false); // Audio visualizer visibility
+  const [sound, setSound] = useState(null); // Howler.js sound instance for current track
+  const [playbackRate, setPlaybackRate] = useState(1); // Playback speed multiplier (1 = normal)
+  const [mediaSourcePath, setMediaSourcePath] = useState(''); // Path to folder containing media files // Path to folder containing media files
+  
+  // DOM References
+  const mediaRef = useRef(null); // Reference to audio element
+  const progressRef = useRef(null); // Reference to progress bar for seeking
+  const fileNameRef = useRef(null); // Reference to filename display for overflow detection
+  const videoRef = useRef(null); // Reference to video element
+  const visualizerRef = useRef(null); // Reference to canvas element for audio visualization
+  const animationFrameRef = useRef(null); // Reference for requestAnimationFrame cleanup
+  
+  // UI interaction state
+  const [isDragging, setIsDragging] = useState(false); // Tracks if user is dragging progress bar
+  const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null); // Timeout for reverting temporary text
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false); // Video modal visibility (currently unused)
+  
+  // Audio visualization
+  const [audioContext, setAudioContext] = useState(null); // Web Audio API context
+  const [audioAnalyser, setAudioAnalyser] = useState(null); // Audio analyzer node for visualizer
+  const [isVisualizerPressed, setIsVisualizerPressed] = useState(false); // Visual feedback for visualizer button
+  
+  // Button animation states (visual feedback for user interactions)
+  const [isSkipRTilted, setIsSkipRTilted] = useState(false); // Skip right button pressed state
+  const [isSkipLTilted, setIsSkipLTilted] = useState(false); // Skip left button pressed state
+  const [isTopSTilted, setIsTopSTilted] = useState(false); // Volume up button pressed state
+  const [isBottomSTilted, setIsBottomSTilted] = useState(false); // Volume down button pressed state
+  
+  // Easter egg animations
+  const [showDisc, setShowDisc] = useState(false); // Disc animation visibility (deprecated, use discs array)
+  const [canTriggerDisc, setCanTriggerDisc] = useState(true); // Prevents spam clicking disc animation
+  const [discs, setDiscs] = useState([]); // Array of active disc animation IDs
+  const [sheep, setSheep] = useState([]); // Array of active sheep animation IDs
+  const [canTriggerSheep, setCanTriggerSheep] = useState(true); // Prevents spam clicking sheep animation
+  const [sheepSound] = useState(new Howl({ // Sound effect for sheep animation
     src: [process.env.PUBLIC_URL + '/media player components/sheep.mp3'],
     volume: 1.0
   }));
 
+  // Unused legacy state (can be removed)
   const [displayText, setDisplayText] = useState("Default Text");
   const [isChangingText, setIsChangingText] = useState(false);
 
-  // Function to load media files from a folder
+  // ==================== MEDIA FILE LOADING ====================
+  
+  /**
+   * Loads media files from a specified folder path
+   * Communicates with Electron main process to read file system
+   * Filters for supported formats (mp3, wav, mp4)
+   * @param {string} folderPath - Absolute path to folder containing media files
+   */
   const loadMediaFiles = async (folderPath) => {
     if (!folderPath) return;
     setMediaSourcePath(folderPath);
@@ -76,10 +101,13 @@ function App() {
       } catch (error) {
         console.error('Error loading media files:', error);
       }
-    }
+    };
   };
 
-  // Load media files
+  /**
+   * Effect: Initialize media files on component mount and when path changes
+   * Loads files from stored path or leaves files array empty if no path set
+   */
   useEffect(() => {
     const loadInitialMediaFiles = async () => {
       if (mediaSourcePath) {
@@ -93,7 +121,10 @@ function App() {
     loadInitialMediaFiles();
   }, [mediaSourcePath]);
 
-  // Handler for the src (dsc) button
+  /**
+   * Opens folder selection dialog via Electron API
+   * Called when user clicks the "dsc" (disc/source) button
+   */
   const handleSourceButtonClick = async () => {
     if (!window.electronAPI || !window.electronAPI.selectFolder) {
       alert("Electron API not available");
@@ -105,10 +136,15 @@ function App() {
     }
   };
 
-  // Define currentFile after files are set
-  const currentFile = files[currentIndex]; // Ensure this is defined after files are populated
+  // ==================== PLAYBACK CONTROL ====================
+  
+  // Get the currently selected file based on index
+  const currentFile = files[currentIndex];
 
-  // Toggle play/pause
+  /**
+   * Toggles between play and pause states
+   * Handles both audio (via Howler) and video (via videoRef) playback
+   */
   const togglePlayPause = () => {
     if (currentFile && sound) {
       if (isPlaying) {
@@ -126,7 +162,10 @@ function App() {
     }
   };
 
-  // Update progress
+  /**
+   * Updates the progress bar based on current playback position
+   * Called periodically by interval timer
+   */
   const updateProgress = () => {
     if (sound) {
         const progressValue = (sound.seek() / sound.duration()) * 100; // Get current time and duration from Howler
@@ -134,7 +173,11 @@ function App() {
     }
   };
 
-  // Next track
+  /**
+   * Skips to the next track in the playlist
+   * Wraps around to first track when reaching the end
+   * Automatically starts playing the new track
+   */
   const nextTrack = () => {
     if (sound) {
       sound.stop(); // Stop the current track
@@ -156,14 +199,23 @@ function App() {
     newSound.play(); // Start playing the next track
   }; 
 
-  // Previous track
+  /**
+   * Skips to the previous track in the playlist
+   * Wraps around to last track when at the beginning
+   * Resets playback state and progress
+   */
   const prevTrack = () => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + files.length) % files.length);
     setIsPlaying(false);
     setProgress(0);
   };
 
-  // Handle volume change
+  // ==================== VOLUME CONTROL ====================
+  
+  /**
+   * Updates volume level from slider input
+   * Note: Currently only updates mediaRef, may need to update Howler sound as well
+   */
   const handleVolumeChange = (e) => {
     const volumeValue = e.target.value;
     setVolume(volumeValue);
@@ -172,13 +224,22 @@ function App() {
     }
   };
 
-  // Handle progress mouse events
+  // ==================== PROGRESS BAR SEEKING ====================
+  
+  /**
+   * Initiates dragging on progress bar
+   * Allows user to seek to specific position in track
+   */
   const handleProgressMouseDown = (e) => {
     e.preventDefault(); // Prevent default behavior
     setIsDragging(true);
     updateProgressBar(e); // Update immediately on mouse down
   };
 
+  /**
+   * Handles mouse movement during progress bar drag
+   * Only updates if dragging is active
+   */
   const handleProgressMouseMove = (e) => {
     if (isDragging) {
       e.preventDefault(); // Prevent default behavior
@@ -186,11 +247,17 @@ function App() {
     }
   };
 
+  /**
+   * Ends progress bar dragging interaction
+   */
   const handleProgressMouseUp = () => {
     setIsDragging(false); // Stop dragging
   };
 
-  // Update progress bar
+  /**
+   * Calculates and applies new playback position based on mouse position
+   * @param {MouseEvent} e - Mouse event containing cursor position
+   */
   const updateProgressBar = (e) => {
     if (!sound) return; // Ensure sound is available
     const progressBar = progressRef.current;
@@ -202,7 +269,12 @@ function App() {
     sound.seek(newProgress * sound.duration()); // Set Howler sound current time
   };
 
-  // Event listeners for dragging behavior
+  // ==================== EFFECT HOOKS ====================
+  
+  /**
+   * Effect: Set up global mouse event listeners for progress bar dragging
+   * Ensures dragging works even when cursor moves outside progress bar
+   */
   useEffect(() => {
     window.addEventListener("mouseup", handleProgressMouseUp);
     window.addEventListener("mousemove", handleProgressMouseMove);
@@ -212,20 +284,31 @@ function App() {
     };
   }, [isDragging]);
 
-  // Update progress on time update
+  /**
+   * Effect: Update progress bar every second during playback
+   */
   useEffect(() => {
     const interval = setInterval(updateProgress, 1000); // Update progress every second
     return () => clearInterval(interval); // Cleanup interval on unmount
   }, [sound]); // Run this effect when the sound changes
 
-  // Ensure the volume is set every time the current track changes
+  /**
+   * Effect: Reapply volume setting when track or volume changes
+   * Ensures volume persists across track changes
+   */
   useEffect(() => {
     if (mediaRef.current) {
       mediaRef.current.volume = volume;
     }
   }, [currentIndex, volume]); // Reapply volume when the song or volume changes
 
-  // Auto play the new track when it changes
+  /**
+   * Effect: Initialize and play new track when currentFile changes
+   * - Creates new Howler sound instance with current settings
+   * - Sets up audio analyzer for visualizer
+   * - Handles video element synchronization
+   * - Toggles UI elements based on media type (audio vs video)
+   */
   useEffect(() => {
     if (currentFile) {
       // Stop the previous sound if it exists
@@ -300,7 +383,10 @@ function App() {
     };
   }, [currentFile]);
 
-  // Event listeners for video playback
+  /**
+   * Effect: Synchronize video element events with playback state
+   * Keeps video and audio playback in sync, updates progress bar
+   */
   useEffect(() => {
     // Use videoRef for video element listeners
     const videoElement = videoRef.current;
@@ -347,7 +433,16 @@ function App() {
     }
   }, [videoRef, sound, nextTrack]); // Re-run when videoRef, sound, or nextTrack changes, dependency on sound is important for sync
 
-  // Handle button clicks
+  // ==================== BUTTON HANDLERS ====================
+  
+  /**
+   * Main handler for numbered control buttons and special function buttons
+   * Buttons 1-4: Playback speed controls
+   * Button 5-6: Handled separately by handleSeekButtonClick
+   * Button 7-10: Placeholder for future features
+   * aud: Toggles audio visualizer
+   * @param {string} buttonId - ID of the clicked button
+   */
   const handleButtonClick = (buttonId) => {
     if (buttonId === 'aud') {
       console.log('Toggling visualizer, current state:', showVisualizer);
@@ -413,7 +508,11 @@ function App() {
     }
   };
 
-  // New handler for seek buttons (5 and 6) that does not toggle pressedButton
+  /**
+   * Handler for seek forward/backward buttons (5 and 6)
+   * Does not toggle pressed state, only performs seek action
+   * @param {string} buttonId - Either 'button5' (back 5s) or 'button6' (forward 5s)
+   */
   const handleSeekButtonClick = (buttonId) => {
     if (buttonId === 'button5') {
       // Jump backward by 5 seconds
@@ -435,7 +534,12 @@ function App() {
     }
   };
 
-  // Check for overflow in file name
+  // ==================== FILENAME DISPLAY ====================
+  
+  /**
+   * Effect: Check if filename text overflows container and needs scrolling
+   * Updates shouldScroll state which triggers CSS animation
+   */
   useEffect(() => {
     const checkOverflow = () => {
       if (fileNameRef.current) {
@@ -453,7 +557,10 @@ function App() {
   }, [files, currentIndex, tempFileName]); // Include tempFileName as a dependency
   
 
-  // Handle clock click
+  /**
+   * Shows current time when clock button is clicked
+   * Temporarily replaces filename display for 1.5 seconds
+   */
   const handleClockClick = () => {
     const currentTime = new Date().toLocaleTimeString();
     setTempFileName(currentTime); // Temporarily set the file name
@@ -470,6 +577,11 @@ function App() {
   };
   
 
+  /**
+   * Temporarily displays custom text in place of filename
+   * Used for user feedback (e.g., "Speed1!", "-5 seconds")
+   * @param {string} newText - Text to display temporarily
+   */
   const temporarilyChangeText = (newText) => {
     if (tempFileNameTimeout) clearTimeout(tempFileNameTimeout);
   
@@ -485,7 +597,14 @@ function App() {
   };
   
 
-  // Helper function to toggle element visibility by ID
+  // ==================== UTILITY FUNCTIONS ====================
+  
+  /**
+   * Toggles visibility of DOM elements by their ID
+   * Used to show/hide elements based on media type (audio vs video)
+   * @param {string} id - Element ID to toggle
+   * @param {boolean} isVisible - Whether element should be visible
+   */
   const toggleElementVisibilityById = (id, isVisible) => {
     const element = document.getElementById(id);
     if (element) {
@@ -493,6 +612,10 @@ function App() {
     }
   };
 
+  /**
+   * Effect: Load saved media source path from localStorage on mount
+   * Falls back to default music path via Electron API if no saved path exists
+   */
   useEffect(() => {
     const stored = localStorage.getItem('mediaSourcePath');
     if (stored) {
@@ -504,7 +627,12 @@ function App() {
     }
   }, []);
 
-  // Modify the visualizer effect
+  // ==================== AUDIO VISUALIZER ====================
+  
+  /**
+   * Effect: Start/stop audio visualizer animation
+   * Requires showVisualizer flag, active sound, and audio analyzer
+   */
   useEffect(() => {
     console.log('Visualizer effect running:', { 
       showVisualizer, 
@@ -536,7 +664,11 @@ function App() {
     };
   }, [showVisualizer, sound, audioAnalyser]);
 
-  // Modify the drawVisualizer function
+  /**
+   * Draws audio frequency visualization on canvas
+   * Uses Web Audio API analyzer to get frequency data
+   * Creates animated bars representing audio spectrum
+   */
   const drawVisualizer = () => {
     if (!visualizerRef.current || !audioAnalyser) {
       console.log('Visualizer or analyzer not ready:', { 
@@ -583,11 +715,19 @@ function App() {
     }
   };
 
-  // Add these handlers
+  // ==================== BUTTON ANIMATION HANDLERS ====================
+  // Visual feedback handlers for button press/release states
+  
+  /**
+   * Skip right button press handler - adds tilt effect
+   */
   const handleSkipRMouseDown = () => {
     setIsSkipRTilted(true);
   };
 
+  /**
+   * Skip right button release handler - removes tilt effect
+   */
   const handleSkipRMouseUp = () => {
     setIsSkipRTilted(false);
   };
@@ -616,7 +756,12 @@ function App() {
     setIsBottomSTilted(false);
   };
 
-  // Add this handler
+  // ==================== EASTER EGG HANDLERS ====================
+  
+  /**
+   * Triggers spinning disc animation when "rel" button is clicked
+   * Prevents spam clicking with cooldown timer
+   */
   const handleRelClick = () => {
     if (canTriggerDisc) {
       const newDiscId = Date.now(); // Create unique ID for the disc
@@ -632,6 +777,10 @@ function App() {
     }
   };
 
+  /**
+   * Triggers sheep animation and sound effect when "ba" button is clicked
+   * Prevents spam clicking with cooldown timer
+   */
   const handleBaClick = () => {
     if (canTriggerSheep) {
       const newSheepId = Date.now();
@@ -649,6 +798,9 @@ function App() {
     }
   };
 
+  // ==================== RENDER ====================
+  
+  // Empty state: Show UI with prompt to select folder
   if (files.length === 0) return (
     <div className="app">
       <div className="title-bar">
@@ -723,6 +875,7 @@ function App() {
     </div>
   );
 
+  // Main player UI with loaded media files
   return (
     <div className="app">
       <div className="title-bar">
