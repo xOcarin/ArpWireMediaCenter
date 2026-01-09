@@ -15,7 +15,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0); // Index of currently playing file
   const [isPlaying, setIsPlaying] = useState(false); // Playback state
   const [progress, setProgress] = useState(0); // Playback progress (0-100%)
-  const [volume, setVolume] = useState(.5); // Volume level (0-1 range)
+  const [volume, setVolume] = useState(.1); // Volume level (0-1 range)
   const [pressedButton, setPressedButton] = useState(null); // Tracks which control button is active
   const [shouldScroll, setShouldScroll] = useState(false); // Whether filename should scroll if too long
   const [tempFileName, setTempFileName] = useState(null); // Temporary text to display instead of filename
@@ -36,7 +36,8 @@ function App() {
   const [isDragging, setIsDragging] = useState(false); // Tracks if user is dragging progress bar
   const [tempFileNameTimeout, setTempFileNameTimeout] = useState(null); // Timeout for reverting temporary text
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false); // Video modal visibility (currently unused)
-  
+
+
   // Audio visualization
   const [audioContext, setAudioContext] = useState(null); // Web Audio API context
   const [audioAnalyser, setAudioAnalyser] = useState(null); // Audio analyzer node for visualizer
@@ -197,7 +198,33 @@ function App() {
     });
     setSound(newSound);
     newSound.play(); // Start playing the next track
-  }; 
+  };
+
+  /**
+   * Plays a specific track from the queue
+   * @param {number} index - Index of the track to play
+   */
+  const playTrack = (index) => {
+    if (sound) {
+      sound.stop();
+    }
+    setCurrentIndex(index);
+    setIsPlaying(false);
+    setProgress(0);
+
+    if (files[index]) {
+      const newSound = new Howl({
+        src: [files[index].absPath],
+        volume: volume,
+        rate: playbackRate,
+        onplay: () => setIsPlaying(true),
+        onpause: () => setIsPlaying(false),
+        onend: nextTrack,
+      });
+      setSound(newSound);
+      newSound.play();
+    }
+  };
 
   /**
    * Skips to the previous track in the playlist
@@ -809,7 +836,7 @@ function App() {
         <button className="window-btn close" onClick={() => window.electronAPI.closeWindow()}>✕</button>
       </div>
       <div className="player-container">
-        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background.png'} alt="Next" style={{ position: 'absolute' }} />
+        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background2.png'} alt="Next" style={{ position: 'absolute' }} />
         <img id={'screen'} src={process.env.PUBLIC_URL + '/media player components/screen.png'} alt="Next" style={{ position: 'absolute'}} />
         
         {/* Navigation buttons */}
@@ -877,6 +904,7 @@ function App() {
 
   // Main player UI with loaded media files
   return (
+    <div className="main-container" style={{display: 'flex', flexDirection: 'column'}}>
     <div className="app">
       <div className="title-bar">
         <div className="drag-region"></div>
@@ -884,7 +912,7 @@ function App() {
         <button className="window-btn close" onClick={() => window.electronAPI.closeWindow()}>✕</button>
       </div>
       <div className="player-container">
-        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background.png'} alt="Next" style={{ position: 'absolute' }} />
+        <img id={'background'} src={process.env.PUBLIC_URL + '/media player components/background2.png'} alt="Next" style={{ position: 'absolute' }} />
         <img id={'screen'} src={process.env.PUBLIC_URL + '/media player components/screen.png'} alt="Next" style={{ position: 'absolute'}} />
         
         {/* Navigation buttons */}
@@ -1032,7 +1060,7 @@ function App() {
             height={40}
             style={{
               position: 'absolute',
-              top: '40%',
+              top: '25%',
               left: '50%',
               transform: 'translateX(-48%)',
               width: '46%',
@@ -1096,6 +1124,7 @@ function App() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

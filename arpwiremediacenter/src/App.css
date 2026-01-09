@@ -3,13 +3,16 @@
 .app {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
-  background-color: #5f5f5f;
+  align-items: flex-start;
+  height: 375px;
+/*  height: 100vh; */
+  background-color: transparent;
   color: white;
   font-family: Arial, sans-serif;
   overflow: hidden;
   border-radius: 30px;
+  position: relative;
+  z-index: 100;
 }
 *{
   overflow: hidden;
@@ -45,7 +48,7 @@
   padding: 10px;
   border-radius: 5px;
   position: absolute;
-  top: 30%;
+  top: 20%;
   left: 50%; /* Center horizontally */
   transform: translateX(-48%); /* Adjust for centering */
   width: 48%; /* Allow width to adjust based on content */
@@ -96,7 +99,7 @@
 /* Video styling with locked size */
 .video {
   position: absolute;
-  top: 27vh;
+  top: 74px;  /* 27vh of 274px */
   left: 27.2vw;
   width: 45%;
   height: 40%;
@@ -153,12 +156,12 @@
   cursor: pointer;
   /* Changes cursor to indicate clickable */
   position: absolute;
-  bottom: 110px;
+  bottom: 201px;
   z-index: 11;
 }
 
 .video-progress-bar {
-  bottom: 75px !important;
+  bottom: 166px !important;
 }
 
 /* Progress fill */
@@ -206,7 +209,7 @@
 /* New class for centered time display */
 .time-display {
   position: absolute;
-  top: 30%; /* Adjust as needed */
+  top: 20%; /* Adjust as needed */
   left: 50%; /* Center horizontally */
   transform: translate(-50%, 25%); /* Center vertically */
   color: black;
@@ -263,7 +266,7 @@
 }
 
 #screen{
-  top:20%;
+  top:15%;
   left:20%;
   z-index: 1;
 }
@@ -296,62 +299,62 @@
 } */
 
 #button1{
-  bottom: 20px;
+  bottom: 121px;
   left: 225px;
   transform: rotate(2deg);
 
 }
 
 #button2{
-  bottom: 10px;
+  bottom: 111px;
   left: 298px;
   transform: rotate(1deg);
 }
 
 #button3{
-  bottom: 3px;
+  bottom: 104px;
   left: 370px;
   transform: rotate(0deg);
 }
 
 #button4{
-  bottom: 3px;
+  bottom: 104px;
   left: 448px;
   transform: rotate(-2deg);
 }
 
 #button5{
-  bottom: 8px;
+  bottom: 109px;
   left: 525px;
   transform: rotate(-5deg);
 }
 
 #button6{
-  bottom: 18px;
+  bottom: 119px;
   left: 598px;
   transform: rotate(-10deg);
 }
 
 #aud{
-  bottom: 15px;
+  bottom: 116px;
   right: -15px;
   transform: rotate(-20deg);
 }
 #dsc{
-  bottom: -10px;
+  bottom: 91px;
   right: 50px;
   transform: rotate(-15deg);
 }
 
 #clock{
   scale: .4;
-  bottom: 20px;
+  bottom: 121px;
   right: 160px;
 
 }
 
 #ba{
-  bottom: 25px;
+  bottom: 126px;
   left: 180px;
 }
 
@@ -373,7 +376,7 @@
 }
 
 #on{
-  bottom: -5px;
+  bottom: 96px;
   left: -18px;
 }
 
@@ -392,7 +395,7 @@
 }
 
 #skipL{
-  bottom: 55px;
+  bottom: 156px;
   right: 85px;
   transition: transform 0.1s ease;
 }
@@ -402,7 +405,7 @@
 }
 
 #skipR{
-  bottom: 53px;
+  bottom: 154px;
   right: 10px;
   transition: transform 0.1s ease;
 }
@@ -412,13 +415,13 @@
 }
 
 #topS{
-  bottom: 115px;
+  bottom: 216px;
   right: 2px;
   z-index: 1000000;
 }
 
 #bottomS{
-  bottom: 32px;
+  bottom: 133px;
   right: 1px;
 }
 
@@ -431,24 +434,24 @@
 }
 
 .skipL-mask {
-  bottom: 110px;
+  bottom: 211px;
   right: 155px;
   clip-path: polygon(25% 50%, 100% 25%, 100% 75%);
 }
 
 .skipR-mask {
-  bottom: 110px;
+  bottom: 211px;
   right: 40px;
   clip-path: polygon(0% 25%, 75% 50%, 0% 75%);
 }
 .topS-mask {
-  bottom: 155px;
+  bottom: 256px;
   right: 97px;
   clip-path: circle(50% at 50% 50%);
 }
 
 .bottomS-mask {
-  bottom: 75px;
+  bottom: 176px;
   right: 97px;
   clip-path: circle(50% at 50% 50%);
 }
@@ -557,3 +560,19 @@
   --close-btn-width: 16px;
   --close-btn-height: 16px;
 }
+
+
+.expand-toggle {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200000;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.expand-toggle:hover {
+  opacity: 1;
+}
+

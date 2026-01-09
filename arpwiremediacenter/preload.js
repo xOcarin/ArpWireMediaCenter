@@ -13,5 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   sendDSC: (data) => ipcRenderer.send('dsc', data),
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
-  closeWindow: () => ipcRenderer.send('close-window')
+  closeWindow: () => ipcRenderer.send('close-window'),
+  expandWindow: () => ipcRenderer.send('expand-window'),
+  shrinkWindow: () => ipcRenderer.send('shrink-window')
 });

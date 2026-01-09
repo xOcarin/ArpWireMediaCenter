@@ -13,7 +13,7 @@ try {
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 928,
-    height: 274,
+    height: 375,
     frame: false,
     transparent: true,
     resizable: false,
@@ -31,6 +31,10 @@ function createWindow() {
   // Handle minimize and close events
   ipcMain.on("minimize-window", () => mainWindow.minimize());
   ipcMain.on("close-window", () => mainWindow.close());
+
+  // Handle window resizing for drawer
+  ipcMain.on("expand-window", () => mainWindow.setSize(928, 574));
+  ipcMain.on("shrink-window", () => mainWindow.setSize(928, 375));
 
   // Handle folder selection from renderer
   ipcMain.handle('dialog:openDirectory', async () => {
